@@ -1,6 +1,6 @@
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_ether.h linux.dev/include/linux/if_ether.h
-*** linux/include/linux/if_ether.h	Tue Sep  7 10:14:37 1999
---- linux.dev/include/linux/if_ether.h	Sun Apr 23 11:29:09 2000
+*** linux/include/linux/if_ether.h	Tue Jul 11 11:12:24 2000
+--- linux.dev/include/linux/if_ether.h	Sun Aug 27 18:03:21 2000
 ***************
 *** 33,36 ****
 --- 33,66 ----
@@ -48,10 +48,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_eth
   #define ETH_P_IPV6	0x86DD		/* IPv6 over bluebook		*/
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vlan.h linux.dev/include/linux/if_vlan.h
 *** linux/include/linux/if_vlan.h	Wed Dec 31 17:00:00 1969
---- linux.dev/include/linux/if_vlan.h	Sun Apr 23 11:36:49 2000
+--- linux.dev/include/linux/if_vlan.h	Sun Aug 27 19:30:38 2000
 ***************
 *** 0 ****
---- 1,352 ----
+--- 1,365 ----
 + /*
 +  * VLAN		An implementation of 802.1Q VLAN tagging.
 +  *
@@ -135,8 +135,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + void vlan_dev_copy_and_sum(struct sk_buff *dest, unsigned char *src,
 +                            int length, int base);
 + int vlan_dev_set_dflt_vid(char* dev_name, unsigned short vid);
++ int vlan_dev_set_dflt_priority(char* dev_name, unsigned short vid);
 + int vlan_dev_set_ingress_priority(char* dev_name, __u32 skb_prio, short vlan_prio);
 + int vlan_dev_set_egress_priority(char* dev_name, __u32 skb_prio, short vlan_prio);
++ int vlan_dev_set_vlan_flag(char* dev_name, __u32 flag, short flag_val);
 + 
 + /* Found in vlan_port.c */
 + int vlan_port_add_vlan(struct vlan_port* port, struct net_device* vlan_dev,
@@ -275,6 +277,14 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 +    struct vlan_priority_tci_mapping* egress_priority_map[16]; /* hash table */
 + 
 +    unsigned short vlan_id;        /*  The VLAN Identifier for this interface. */
++    unsigned short flags;          /* (1 << 0) re_order_header   This option will cause the
++                                    *   VLAN code to move around the ethernet header on
++                                    *   ingress to make the skb look **exactly** like it
++                                    *   came in from an ethernet port.  This destroys some of
++                                    *   the VLAN information in the skb, but it fixes programs
++                                    *   like DHCP that use packet-filtering and don't understand
++                                    *   802.1Q
++                                    */
 +    struct vlan_port_node* ports; /* Info and TX/RX filters on ports this VLAN bridges. */ 
 +    struct proc_dir_entry* dent;    /* Holds the proc data */
 +    struct vlan_port_node* last_tx_port; /* Used for round-robin type of link aggregation */
@@ -371,7 +381,9 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 +    GET_INGRESS_PRIORITY_IOCTL,
 +    GET_EGRESS_PRIORITY_IOCTL,
 +    SET_NAME_TYPE_IOCTL,
-+    SET_BIND_TYPE_IOCTL
++    SET_BIND_TYPE_IOCTL,
++    SET_VLAN_FLAG_IOCTL,
++    SET_DEFAULT_VLAN_PRIORITY_IOCTL
 + }; /* vlan_ioctl enum */
 + 
 + 
@@ -397,6 +409,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 +       unsigned long skb_priority;
 +       unsigned long name_type;
 +       unsigned long bind_type;
++       unsigned long flag; /* Matches vlan_dev_info flags */
 +    } u;
 + 
 +    short vlan_qos;   
@@ -405,11 +418,11 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + 
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdevice.h linux.dev/include/linux/netdevice.h
-*** linux/include/linux/netdevice.h	Tue Apr 11 17:32:28 2000
---- linux.dev/include/linux/netdevice.h	Sun Apr 23 11:29:09 2000
+*** linux/include/linux/netdevice.h	Wed Aug 23 11:36:12 2000
+--- linux.dev/include/linux/netdevice.h	Sun Aug 27 19:27:15 2000
 ***************
-*** 37,42 ****
---- 37,49 ----
+*** 38,43 ****
+--- 38,50 ----
   #ifdef CONFIG_NET_PROFILE
   #include <net/profile.h>
 + 
@@ -424,7 +437,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
   #define NET_XMIT_SUCCESS	0
   #define NET_XMIT_DROP		1	/* skb dropped			*/
 ***************
-*** 170,179 ****
+*** 171,180 ****
   	struct hh_cache *hh_next;	/* Next entry			     */
   	atomic_t	hh_refcnt;	/* number of users                   */
 ! 	unsigned short  hh_type;	/* protocol identifier, f.e ETH_P_IP */
@@ -435,7 +448,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
 ! 	unsigned long	hh_data[16/sizeof(unsigned long)];
   };
   
---- 177,195 ----
+--- 178,196 ----
   	struct hh_cache *hh_next;	/* Next entry			     */
   	atomic_t	hh_refcnt;	/* number of users                   */
 ! 	unsigned short  hh_type;	/* protocol identifier, f.e ETH_P_IP
@@ -456,8 +469,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
   };
   
 ***************
-*** 371,374 ****
---- 387,403 ----
+*** 383,386 ****
+--- 399,419 ----
   	struct dst_entry	*fastpath[NETDEV_FASTROUTE_HMASK+1];
   #endif
 + 
@@ -471,16 +484,20 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
 +     *  WILL NOT turn the packet into a vlan packet.
 +     */
 +         unsigned short default_vid;  /* VID to be assigned by default. */
++    /* If the default-priority is set, and the default_vid is set, then the
++     * default_priority will be used for the default-VLAN.
++     */
++         unsigned short default_priority; /* Priority to be assigned on a default VLAN */
 + #endif
 + 
   };
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/skbuff.h linux.dev/include/linux/skbuff.h
-*** linux/include/linux/skbuff.h	Tue Apr 11 17:31:49 2000
---- linux.dev/include/linux/skbuff.h	Sun Apr 23 11:28:41 2000
+*** linux/include/linux/skbuff.h	Wed Aug 23 11:35:41 2000
+--- linux.dev/include/linux/skbuff.h	Sun Aug 27 18:02:48 2000
 ***************
-*** 148,151 ****
---- 148,160 ----
+*** 147,150 ****
+--- 147,159 ----
          __u32           tc_index;               /* traffic control index */
   #endif
 + 
@@ -496,7 +513,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/skbuff
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/Makefile linux.dev/net/802_1Q/Makefile
 *** linux/net/802_1Q/Makefile	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/Makefile	Sun Apr 23 10:10:32 2000
+--- linux.dev/net/802_1Q/Makefile	Sun Aug 27 17:25:15 2000
 ***************
 *** 0 ****
 --- 1,26 ----
@@ -528,7 +545,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/Makefile 
 + 	tar -cvf /dev/f1 .
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/sysctl_net_vlan.c linux.dev/net/802_1Q/sysctl_net_vlan.c
 *** linux/net/802_1Q/sysctl_net_vlan.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/sysctl_net_vlan.c	Sun Apr 23 10:10:32 2000
+--- linux.dev/net/802_1Q/sysctl_net_vlan.c	Sun Aug 27 17:25:15 2000
 ***************
 *** 0 ****
 --- 1,18 ----
@@ -552,10 +569,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/sysctl_ne
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c linux.dev/net/802_1Q/vlan.c
 *** linux/net/802_1Q/vlan.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan.c	Sun Apr 23 10:55:40 2000
+--- linux.dev/net/802_1Q/vlan.c	Sun Aug 27 17:34:06 2000
 ***************
 *** 0 ****
---- 1,512 ----
+--- 1,494 ----
 + /*
 +  * INET		An implementation of the TCP/IP protocol suite for the LINUX
 +  *		operating system.  INET is implemented using the  BSD Socket
@@ -888,19 +905,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +             new_dev->new_style = 0;
 +             
 +             /* Gotta set up the fields for the device. */
-+             new_dev->name = (char*)(kmalloc(IFNAMSIZ + 1, GFP_KERNEL));
-+             VLAN_MEM_DBG("new_dev->name malloc, addr: %p  size: %i\n", new_dev->name, IFNAMSIZ + 1);
-+             
-+             if (new_dev->name) {
-+                memset(new_dev->name, 0, IFNAMSIZ + 1); /* zero everything out */
-+             }
-+             else {
-+                kfree(new_dev);
-+                VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
-+                dev_put(real_dev);
-+                return NULL;
-+             }
-+ 
++             memset(new_dev->name, 0, IFNAMSIZ + 1); /* zero everything out */
 +             
 +             if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID) {
 +                /* name will look like:  eth1.0005 */
@@ -975,8 +980,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +             if (new_dev->vlan_dev == NULL) {
 +                kfree(new_dev->priv);
 +                VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
-+                kfree(new_dev->name);
-+                VLAN_FMEM_DBG("new_dev->name free, addr: %p\n", new_dev->name);
 +                kfree(new_dev);
 +                VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
 +                dev_put(real_dev);
@@ -1012,8 +1015,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +                   p802_1Q_vlan_list = grp;
 +                }
 +                else {
-+                   kfree(new_dev->name);
-+                   VLAN_FMEM_DBG("new_dev->name free, addr: %p\n", new_dev->name);
 +                   kfree(new_dev->priv);
 +                   VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
 +                   kfree(new_dev);
@@ -1032,8 +1033,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +             if ((retval = vlan_dev_add_dev(new_dev, real_dev)) < 0) {
 +                printk(KERN_ALERT "ERROR:  vlan_dev_add_dev failed w/error: %i.\n",
 +                       retval);
-+                kfree(new_dev->name);
-+                VLAN_FMEM_DBG("new_dev->name free, addr: %p\n", new_dev->name);
 +                kfree(new_dev->priv);
 +                VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
 +                kfree(new_dev);
@@ -1070,7 +1069,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 + }/* register (create) VLAN device */
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h linux.dev/net/802_1Q/vlan.h
 *** linux/net/802_1Q/vlan.h	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan.h	Sun Apr 23 12:06:17 2000
+--- linux.dev/net/802_1Q/vlan.h	Sun Aug 27 19:30:38 2000
 ***************
 *** 0 ****
 --- 1,44 ----
@@ -1120,10 +1119,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h li
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.c linux.dev/net/802_1Q/vlan_dev.c
 *** linux/net/802_1Q/vlan_dev.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan_dev.c	Sun Apr 23 11:05:42 2000
+--- linux.dev/net/802_1Q/vlan_dev.c	Sun Aug 27 18:35:15 2000
 ***************
 *** 0 ****
---- 1,801 ----
+--- 1,873 ----
 + /*
 +  * INET		An implementation of the TCP/IP protocol suite for the LINUX
 +  *		operating system.  INET is implemented using the  BSD Socket
@@ -1290,7 +1289,13 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +    /*
 +     * Deal with ingress priority mapping.
 +     */
-+    skb->priority = skb->dev->vlan_dev->ingress_priority_map[(ntohs(veth->h_vlan_TCI) >> 13) & 0x7];
++    if (is_1q_skb) {
++       skb->priority = skb->dev->vlan_dev->ingress_priority_map[(ntohs(veth->h_vlan_TCI) >> 13) & 0x7];
++    }
++    else {
++       skb->priority = dev->default_priority;
++    }
++          
 + #ifdef VLAN_DEBUG
 +    printk(VLAN_DBG __FUNCTION__ ": priority: %lu  for TCI: %hu (hbo)\n",
 +           (unsigned long)(skb->priority), ntohs(veth->h_vlan_TCI));
@@ -1352,6 +1357,15 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +          skb->protocol = veth->h_vlan_encapsulated_proto;
 +          /* place it back on the queue to be handled by true layer 3 protocols.
 +           */
++ 
++          /* See if we are configured to re-write the VLAN header to make it look like
++           * ethernet...
++           */
++          if (skb->dev->vlan_dev->flags & 1) {
++             /* Lifted from Gleb's VLAN code... */
++             memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++             skb->mac.raw += 4;
++          }
 +          netif_rx(skb);
 +          return 0;
 +       }
@@ -1369,6 +1383,16 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +       skb->protocol = __constant_htons(ETH_P_802_3);
 +       /* place it back on the queue to be handled by true layer 3 protocols.
 +        */
++ 
++       /* See if we are configured to re-write the VLAN header to make it look like
++        * ethernet...
++        */
++       if (is_1q_skb && (skb->dev->vlan_dev->flags & 1)) {
++          /* Lifted from Gleb's VLAN code... */
++          memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++          skb->mac.raw += 4;
++       }
++       
 +       netif_rx(skb);
 +       return 0;
 +    }
@@ -1379,6 +1403,15 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +    skb->protocol = __constant_htons(ETH_P_802_2);
 +    /* place it back on the queue to be handled by upper layer protocols.
 +     */
++ 
++    /* See if we are configured to re-write the VLAN header to make it look like
++     * ethernet...
++     */
++    if (is_1q_skb && (skb->dev->vlan_dev->flags & 1)) {
++       /* Lifted from Gleb's VLAN code... */
++       memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++       skb->mac.raw += 4;
++    }
 +    netif_rx(skb);
 +    return 0;
 + }
@@ -1524,10 +1557,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 + 
 + void vlan_dev_destruct(struct net_device* dev) {
 + 
-+    kfree(dev->name);
-+    VLAN_FMEM_DBG("dev->name free, addr: %p\n", dev->name);
-+    dev->name = NULL; /* better safe than hosed */
-+    
 +    kfree(dev->priv);
 +    VLAN_FMEM_DBG("dev->priv free, addr: %p\n", dev->priv);
 +    dev->priv = NULL;
@@ -1857,6 +1886,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +    return 0;
 + }
 + 
++ 
 + int vlan_dev_set_dflt_vid(char* dev_name, unsigned short vid) {
 +    struct net_device* dev = dev_get_by_name(dev_name);
 +    int retval = -EINVAL;
@@ -1873,11 +1903,25 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 + }
 + 
 + 
++ int vlan_dev_set_dflt_priority(char* dev_name, unsigned short priority) {
++    struct net_device* dev = dev_get_by_name(dev_name);
++    int retval = -EINVAL;
++    if (dev) {
++       if (!dev->vlan_dev) { /* can't put a dflt ID on a vlan device */
++          dev->default_priority = priority;
++          retval = 0;
++       }
++       dev_put(dev);
++    }
++    return retval;
++ }
++ 
++ 
 + int vlan_dev_set_ingress_priority(char* dev_name, __u32 skb_prio, short vlan_prio) {
 +    struct net_device* dev = dev_get_by_name(dev_name);
 +    
 +    if (dev) {
-+       if (dev->vlan_dev) { /* can't put a dflt ID on a vlan device */
++       if (dev->vlan_dev) {
 +          /* see if a priority mapping exists.. */
 +          dev->vlan_dev->ingress_priority_map[vlan_prio & 0x7] = skb_prio;
 +          dev_put(dev);
@@ -1894,7 +1938,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +    struct vlan_priority_tci_mapping* np;
 +    
 +    if (dev) {
-+       if (dev->vlan_dev) { /* can't put a dflt ID on a vlan device */
++       if (dev->vlan_dev) {
 +          /* see if a priority mapping exists.. */
 +          mp = dev->vlan_dev->egress_priority_map[skb_prio & 0xF];
 +          while (mp) {
@@ -1924,10 +1968,37 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +    }
 +    return -EINVAL;
 + }
++ 
++ /* Flags are defined in the vlan_dev_info class in include/linux/if_vlan.h file. */
++ int vlan_dev_set_vlan_flag(char* dev_name, __u32 flag, short flag_val) {
++    struct net_device* dev = dev_get_by_name(dev_name);
 +    
++    if (dev) {
++       if (dev->vlan_dev) {
++                   /* verify flag is supported */
++          if (flag == 1) {
++             if (flag_val) {
++                dev->vlan_dev->flags |= 1;
++             }
++             else {
++                dev->vlan_dev->flags &= ~1;
++             }
++             dev_put(dev);
++             return 0;
++          }
++          else {
++             dev_put(dev);
++             return -EINVAL;
++          }
++       }
++       dev_put(dev);
++    }
++    return -EINVAL;
++ }
++ 
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_port.c linux.dev/net/802_1Q/vlan_port.c
 *** linux/net/802_1Q/vlan_port.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan_port.c	Sun Apr 23 10:10:32 2000
+--- linux.dev/net/802_1Q/vlan_port.c	Sun Aug 27 17:25:15 2000
 ***************
 *** 0 ****
 --- 1,381 ----
@@ -2314,10 +2385,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_port
 + }
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.c linux.dev/net/802_1Q/vlanproc.c
 *** linux/net/802_1Q/vlanproc.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlanproc.c	Sun Apr 23 12:05:17 2000
+--- linux.dev/net/802_1Q/vlanproc.c	Sun Aug 27 18:26:08 2000
 ***************
 *** 0 ****
---- 1,823 ----
+--- 1,832 ----
 + /*****************************************************************************
 + * vlanproc.c	VLAN Module. /proc filesystem interface.
 + *
@@ -2442,6 +2513,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +                 err = vlan_dev_set_egress_priority(args.dev1, args.u.skb_priority, args.vlan_qos);
 +                 break;
 +            
++         case SET_VLAN_FLAG_IOCTL:
++                 err = vlan_dev_set_vlan_flag(args.dev1, args.u.flag, args.vlan_qos);
++                 break;
++ 
 +         case SET_BIND_TYPE_IOCTL:
 +                 if (args.u.bind_type == VLAN_BIND_PER_KERNEL) {
 +                    vlan_configured_multiple_groups = 0;
@@ -2504,6 +2579,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 
 + 	case SET_DEFAULT_VLAN_ID_IOCTL:
 + 		err = vlan_dev_set_dflt_vid(args.dev1, args.u.VID);
++ 		break;
++ 
++         case SET_DEFAULT_VLAN_PRIORITY_IOCTL:
++ 		err = vlan_dev_set_dflt_priority(args.dev1, args.u.VID);
 + 		break;
 + 
 + 	default:
@@ -2923,8 +3002,9 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 		return 0;
 + 	}
 + 
-+ 	cnt += sprintf(buf + cnt, "%s  VID: %d",
-+ 			vlandev->name, vlandev->vlan_dev->vlan_id);
++ 	cnt += sprintf(buf + cnt, "%s  VID: %d   REORDER_HDR: %i\n",
++                        vlandev->name, vlandev->vlan_dev->vlan_id,
++                        (int)(vlandev->vlan_dev->flags & 1));
 +         stats = (struct net_device_stats*)(vlandev->priv);
 +         
 +         cnt += sprintf(buf + cnt, "%30s: %12lu\n",
@@ -3143,7 +3223,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.h linux.dev/net/802_1Q/vlanproc.h
 *** linux/net/802_1Q/vlanproc.h	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlanproc.h	Sun Apr 23 10:10:32 2000
+--- linux.dev/net/802_1Q/vlanproc.h	Sun Aug 27 17:25:15 2000
 ***************
 *** 0 ****
 --- 1,29 ----
@@ -3177,8 +3257,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/Config.in linux.dev/net/Config.in
-*** linux/net/Config.in	Mon Mar 27 11:35:56 2000
---- linux.dev/net/Config.in	Sun Apr 23 10:10:33 2000
+*** linux/net/Config.in	Mon Jun 19 13:45:51 2000
+--- linux.dev/net/Config.in	Sun Aug 27 17:25:15 2000
 ***************
 *** 41,44 ****
 --- 41,45 ----
@@ -3198,38 +3278,60 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/Config.in linux.
   fi
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/Makefile linux.dev/net/Makefile
-*** linux/net/Makefile	Mon Mar 27 11:35:56 2000
---- linux.dev/net/Makefile	Sun Apr 23 10:13:31 2000
+*** linux/net/Makefile	Sun Aug  6 11:23:41 2000
+--- linux.dev/net/Makefile	Sun Aug 27 17:59:09 2000
 ***************
 *** 11,15 ****
   ALL_SUB_DIRS := 802 ax25 bridge core ethernet ipv4 ipv6 ipx unix appletalk \
   		netrom rose lapb x25 wanrouter netlink sched packet sunrpc \
-! 		econet irda decnet atm khttpd ipv4/netfilter
-  SUB_DIRS     := core ethernet sched
-  MOD_LIST_NAME := NET_MISC_MODULES
---- 11,15 ----
+! 		econet irda decnet atm khttpd ipv4/netfilter ipv6/netfilter
+  SUB_DIRS     := core ethernet
+  
+--- 11,16 ----
   ALL_SUB_DIRS := 802 ax25 bridge core ethernet ipv4 ipv6 ipx unix appletalk \
   		netrom rose lapb x25 wanrouter netlink sched packet sunrpc \
-! 		econet irda decnet atm khttpd ipv4/netfilter 802_1Q
-  SUB_DIRS     := core ethernet sched
-  MOD_LIST_NAME := NET_MISC_MODULES
+! 		econet irda decnet atm khttpd ipv4/netfilter ipv6/netfilter \
+!                 802_1Q
+  SUB_DIRS     := core ethernet
+  
 ***************
-*** 72,75 ****
---- 72,79 ----
-  ifeq ($(CONFIG_BRIDGE),y)
-  SUB_DIRS += bridge
-+ endif
+*** 83,86 ****
+--- 84,93 ----
+    endif
+  endif
++ 
 + 
 + ifeq ($(CONFIG_VLAN_802_1Q),y)
 + SUB_DIRS += 802_1Q
-  else
-    ifeq ($(CONFIG_BRIDGE),m)
-diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux.dev/net/core/dev.c
-*** linux/net/core/dev.c	Mon Mar 27 15:17:05 2000
---- linux.dev/net/core/dev.c	Sun Apr 23 10:10:33 2000
++ endif
++ 
+  
+  ifeq ($(CONFIG_IPX),y)
+diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/Makefile.rej linux.dev/net/Makefile.rej
+*** linux/net/Makefile.rej	Wed Dec 31 17:00:00 1969
+--- linux.dev/net/Makefile.rej	Sun Aug 27 17:25:15 2000
 ***************
-*** 93,96 ****
---- 93,101 ----
+*** 0 ****
+--- 1,13 ----
++ ***************
++ *** 11,15 ****
++   ALL_SUB_DIRS := 802 ax25 bridge core ethernet ipv4 ipv6 ipx unix appletalk \
++   		netrom rose lapb x25 wanrouter netlink sched packet sunrpc \
++ ! 		econet irda decnet atm khttpd ipv4/netfilter
++   SUB_DIRS     := core ethernet sched
++   MOD_LIST_NAME := NET_MISC_MODULES
++ --- 11,15 ----
++   ALL_SUB_DIRS := 802 ax25 bridge core ethernet ipv4 ipv6 ipx unix appletalk \
++   		netrom rose lapb x25 wanrouter netlink sched packet sunrpc \
++ ! 		econet irda decnet atm khttpd ipv4/netfilter 802_1Q
++   SUB_DIRS     := core ethernet sched
++   MOD_LIST_NAME := NET_MISC_MODULES
+diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux.dev/net/core/dev.c
+*** linux/net/core/dev.c	Tue Aug 22 08:59:00 2000
+--- linux.dev/net/core/dev.c	Sun Aug 27 17:25:15 2000
+***************
+*** 95,98 ****
+--- 95,103 ----
   #endif	/* CONFIG_NET_RADIO || CONFIG_NET_PCMCIA_RADIO */
   #ifdef CONFIG_PLIP
 + 
@@ -3240,7 +3342,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
   extern int plip_init(void);
   #endif
 ***************
-*** 114,120 ****
+*** 116,122 ****
    *
    *	Why 16. Because with 16 the only overlap we get on a hash of the
 !  *	low nibble of the protocol value is RARP/SNAP/X.25. 
@@ -3248,7 +3350,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
    *		0800	IP
    *		0001	802.3
    *		0002	AX.25
---- 119,133 ----
+--- 121,135 ----
    *
    *	Why 16. Because with 16 the only overlap we get on a hash of the
 !  *	low nibble of the protocol value is RARP/SNAP/X.25.
@@ -3265,14 +3367,14 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
    *		0001	802.3
    *		0002	AX.25
 ***************
-*** 425,430 ****
+*** 541,546 ****
   	/*
   	 *	If you need over 100 please also fix the algorithm...
   	 */
 ! 	for (i = 0; i < 100; i++) {
   		sprintf(buf,name,i);
   		if (__dev_get_by_name(buf) == NULL) {
---- 438,445 ----
+--- 554,561 ----
   	/*
   	 *	If you need over 100 please also fix the algorithm...
 +          *      Increased it to deal with VLAN interfaces.  It is unlikely
@@ -3282,24 +3384,24 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
   		sprintf(buf,name,i);
   		if (__dev_get_by_name(buf) == NULL) {
 ***************
-*** 433,437 ****
+*** 549,553 ****
   		}
   	}
 ! 	return -ENFILE;	/* Over 100 of the things .. bail out! */
   }
   
---- 448,452 ----
+--- 564,568 ----
   		}
   	}
 ! 	return -ENFILE;	/* Over 8192 of the things .. bail out! */
   }
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c linux.dev/net/ethernet/eth.c
-*** linux/net/ethernet/eth.c	Sat Jan 22 12:54:57 2000
---- linux.dev/net/ethernet/eth.c	Sun Apr 23 10:10:33 2000
+*** linux/net/ethernet/eth.c	Tue Aug 22 08:59:00 2000
+--- linux.dev/net/ethernet/eth.c	Sun Aug 27 17:25:15 2000
 ***************
-*** 181,184 ****
---- 181,187 ----
+*** 175,178 ****
+--- 175,181 ----
    *	assume 802.3 if the type field is short enough to be a length.
    *	This is normal practice and works for any 'now in use' protocol.
 +  *
@@ -3308,7 +3410,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c l
    */
    
 ***************
-*** 187,195 ****
+*** 181,189 ****
   	struct ethhdr *eth;
   	unsigned char *rawp;
 ! 	
@@ -3318,7 +3420,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c l
 ! 	
   	if(*eth->h_dest&1)
   	{
---- 190,210 ----
+--- 184,204 ----
   	struct ethhdr *eth;
   	unsigned char *rawp;
 ! 
@@ -3341,13 +3443,13 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c l
   	if(*eth->h_dest&1)
   	{
 ***************
-*** 213,217 ****
+*** 207,211 ****
   			skb->pkt_type=PACKET_OTHERHOST;
   	}
 ! 	
   	if (ntohs(eth->h_proto) >= 1536)
   		return eth->h_proto;
---- 228,247 ----
+--- 222,241 ----
   			skb->pkt_type=PACKET_OTHERHOST;
   	}
 ! 
@@ -3369,8 +3471,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c l
   	if (ntohs(eth->h_proto) >= 1536)
   		return eth->h_proto;
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/protocols.c linux.dev/net/protocols.c
-*** linux/net/protocols.c	Mon Aug 23 09:56:32 1999
---- linux.dev/net/protocols.c	Sun Apr 23 10:10:33 2000
+*** linux/net/protocols.c	Mon May  8 22:21:58 2000
+--- linux.dev/net/protocols.c	Sun Aug 27 17:25:15 2000
 ***************
 *** 35,38 ****
 --- 35,42 ----
@@ -3385,11 +3487,11 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/protocols.c linu
 ***************
 *** 179,182 ****
 --- 183,190 ----
+    { "Econet",	econet_proto_init },			/* Acorn Econet */
   #endif
-  
 + #ifdef CONFIG_VLAN_802_1Q
 +   { "VLAN",     vlan_proto_init },                    /* 802.1Q VLAN Support. --BLG */
 + #endif
 +   
-    { NULL,	NULL		}			/* End marker			*/
-  };
+  
+  #ifdef CONFIG_IRDA

@@ -21,6 +21,8 @@ static char* usage =
 Usage: add             [interface-name] [vlan_id]
        rem             [vlan-name]
        set_dflt        [interface-name] [vlan_id]
+       set_dflt_prio   [interface-name] [dflt_priority]
+       set_flag        [interface-name] [flag-num]       [0 | 1]
        add_port        [port-name]      [vlan_id]
        rem_port        [port-name]      [vlan_id]
        set_egress_map  [vlan-name]      [skb_priority]   [vlan_qos]
@@ -39,7 +41,16 @@ Usage: add             [interface-name] [vlan_id]
               DEV_PLUS_VID (eth0.0005), DEV_PLUS_VID_NO_PAD (eth0.5)
 * bind-type:  PER_DEVICE  # Allows vlan 5 on eth0 and eth1 to be unique.
               PER_KERNEL  # Forces vlan 5 to be unique across all devices.
-
+* FLAGS:  1 REORDER_HDR  When this is set, the VLAN device will move the
+            ethernet header around to make it look exactly like a real
+            ethernet device.  This may help programs such as DHCPd which
+            read the raw ethernet packet and make assumptions about the
+            location of bytes.  If you don't need it, don't turn it on, because
+            there will be at least a small performance degradation.  Default
+            is OFF.
+* dflt_priority:  If you want to add a default-priority to your default-vlan,
+            then use this to set it.  The priority will not be mapped, and will
+            only be used on ingress.  It can only be added to NON-VLAN devices.
 ";
 
 void show_usage() {
@@ -185,6 +196,16 @@ int main(int argc, char** argv) {
               << if_name << ":-" << endl;
       }
    }//if
+   else if (strcasecmp(cmd, "set_dflt_prio") == 0) {
+      if (ioctl(fd, SET_DEFAULT_VLAN_PRIORITY_IOCTL, &if_request) < 0) {
+         cerr << "ERROR: trying to set default PRIORITY " << vid << " on IF -:"
+              << if_name << ":-  error: " << strerror(errno) << endl;
+      }
+      else {
+         cout << "Set default PRIORITY " << vid << " on IF -:"
+              << if_name << ":-" << endl;
+      }
+   }//if
    else if (strcasecmp(cmd, "add_port") == 0) {
       if (ioctl(fd, ADD_VLAN_TO_PORT_IOCTL, &if_request) < 0) {
          cerr << "ERROR: trying to add VLAN #" << vid << " to port -:"
@@ -214,7 +235,7 @@ int main(int argc, char** argv) {
          cout << "Set egress mapping on device -:"
               << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
       }
-   }   
+   }
    else if (strcasecmp(cmd, "set_ingress_map") == 0) {
       if (ioctl(fd, SET_INGRESS_PRIORITY_IOCTL, &if_request) < 0) {
          cerr << "ERROR: trying to set ingress map on device -:"
@@ -222,6 +243,16 @@ int main(int argc, char** argv) {
       }
       else {
          cout << "Set ingress mapping on device -:"
+              << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
+      }
+   }   
+   else if (strcasecmp(cmd, "set_flag") == 0) {
+      if (ioctl(fd, SET_VLAN_FLAG_IOCTL, &if_request) < 0) {
+         cerr << "ERROR: trying to set flag on device -:"
+              << if_name << ":-  error: " << strerror(errno) << endl;
+      }
+      else {
+         cout << "Set flag on device -:"
               << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
       }
    }   

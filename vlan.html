@@ -8,25 +8,38 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated April 23, 2000<br>
-Release:  0.0.11</br>
+Updated August 27, 2000<br>
+Release:  0.0.12</br>
 </i></center>
 <P>
 
 This code should be considered <b>BETA</b>.  MTU problems exist for
-many ethernet drivers, and people have reported ARP problems, though
-it works at least some of the time.  Other than that, things seem
-fairly stable!
+many ethernet drivers.  Other than that, things seem fairly stable!
 <P>
+
+<center>
+<B>PLUG: &nbsp; I'm currently starting a company that provides ethernet traffic generation and testing
+   equipment in a compact Linux based shelf:<br>
+    <a target=_top href="http://www.candelatech.com"><img src="http://www.candelatech.com/images/candela_swirl_small.png"
+                                                      alt="Candela Technologies"
+                                                      border=0></a>
+<br>
+Let us help you test your DSL, Cable Access, and other systems!</b>
+</center>
 
 <BR>Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
  After that, to post, send mail to 
 <A HREF="mailto:vlan@scry.wanfear.com">vlan@scry.wanfear.com</a>.
 <P>
+Submit a bug/issue/enhancement with:  <a href="http://grok.yi.org:9001/IssueTracker/home?Project=VLAN">Issue Tracker</a></li>
+(Log in as user: <tt>vlan</tt>  with password: <tt>vlan</tt>)
+<P>
+
 Though I have no real VLAN hardware of my own, I hear that the code (2.2 kernel patches) has worked
 with these systems: <P>
 <ul>
-  <li> Cisco Catalyst, 3Com Corebuilder, Netbuilder II </li>
+  <li> Cisco Catalyst, 3Com Corebuilder, Netbuilder II, Extreme Ntwks Summit 48,
+       Foundry: {ServerIronXL, FastIron}</li>
   <li> Alteon ACENic Gigabit, 3Com 3c509, realtek RTL8029(AS), RTL8139, DEC DC21140 (tulip)
   </li>
 </ul>
@@ -42,8 +55,11 @@ Here are the numbers:<br>
 <b>Using Ethernet Interface:</b> 930 kBps</br>
 <P>
 
-<b><center>Other VLAN related Resources.</center></b>
+<b><center>VLAN related Resources.</center></b>
 <ul>
+<li> <a href="#setup"> VLAN Installation & Configuration info.</a></li>
+<li> <a href="#cvs_setup"> CVS Access.</a></li>
+<li> <a href="vlan/cisco_howto.html"> VLAN HOWTO (Some CISCO & 3COM specific info too.)</a></li>
 <li> <a target=_top href="http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm">
       http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm</a></li>
 <li> <a target=_top href="ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf">
@@ -56,6 +72,24 @@ Here are the numbers:<br>
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.0.0.12.tar.gz">Release 0.0.12 (gz)</a> &nbsp; For Kernel: 2.2.16, 2.4.pre7 &nbsp; August 27, 2000:</b><br>
+  Added ability to re-order the VLAN packet so that it looks like a real ethernet
+  packet for the ingress pathway.  This should help DHCP and other programs that insist
+  on reading the raw buffer and then make assumptions about byte offsets.  I don't have
+  a good way to test this fully, so consider it experimental :)  This behavior can be
+  changed at run-time, and is set on a per-VLAN basis.  The default is NOT to reorder the
+  header, which has been the only behavior up untill this point.  The <tt>vconfig</tt>
+  program can set/clear the flag, by using a VLAN IOCTL.  You can read the flag's value
+  from  the /proc/net/vlan/vlan* files.
+<P>
+  You can also set a default priority on a NON-VLAN device.  This priority will only
+  be used when the default_VID for the device is set as well.  This priority won't
+  be mapped anywhere, just copied straight into the skb->priority.  It is a uint16.
+<P>
+  The 2.3 patch is now the 2.4 patch, and it has been tested against 2.4.pre7.
+</li>
+<P>
+
 <li> <b><a href="vlan/vlan.0.0.11.tar.gz">Release 0.0.11 (gz)</a> &nbsp; For Kernel: 2.2.13/14, 2.3.99 &nbsp; April 23, 2000:</b><br>
   Added real support for PRIORITY.  Through IOCTL calls (see the vconfig program), you can set
   explicit ingress and egress mappings to/from the VLAN QOS bits and the sk_buff->priority
@@ -141,58 +175,16 @@ Usage: add             [interface-name] [vlan_id]
   Added some debugging code (you have to compile it in if you need it)
 </li><P>
 
-<li> <b><a href="vlan/vlan.0.0.8.tar.gz">Release 0.0.8 (gz)</a> &nbsp; For Kernel: 2.2.13+ &nbsp; December 22, 1999:</b><br>
-  Fixed #ifdef problem that caused symbols to not be compiled or found.
-  Fixed minor warning.  If it compiled for you last time, nothing worth
-  having in this load I think.
-</li><P>
-
-<li> <b><a href="vlan/vlan.0.0.7.tar.gz">Release 0.0.7 (gz)</a> &nbsp; For Kernel: 2.2.10+ &nbsp; December 5, 1999:</b><br>
-  Re-wrote the /proc code to never go above 4k buffers.  This means
-  that each port now has it's own file entry.  Fixed crash bug with
-  removing VLAN devices.  Byte and pkt counters are now updated correctly,
-  and are found in the /proc/net/vlan/&lt;device> file.
-</li><P>
-
-<li> <b><a href="vlan/vlan.0.0.6.tar.gz">Release 0.0.6 (gz)</a> &nbsp; For Kernel: 2.2.10+ &nbsp; October 20, 1999:</b><br>
- Coded around an extraneous skb alloc/free so that there should be no
- extra buffer copying as compared to an ethernet interface, unless the
- vlan device spans more than one interface.  Put #ifdef around all printk
- debugging calls, at least for non-control code (ie no more printk in the
- critical paths.)
-</li>
-
-<P>
-<li> <b><a href="vlan/vlan.0.0.5.tar.gz">Release 0.0.5 (gz)</a> &nbsp; For Kernel: 2.2.10 &nbsp; October 19, 1999:</b><br>
-  Got tcpdump working with VLAN pkts (use the -e option).  Got basic VLAN
-  functionality working, though problems remain, including a KERNEL CRASH
-  that can be induced by ping -f on one of the vlan interfaces.  My test
-  setup consists of two linux boxes, each running my modified kernel.
-  Since I have no third-party implementation to test against, it is likely
-  the code is not too right yet!!
-  Performance isn't all that great:  Running a Cyrix 155 &lt;-> a Cyrix 233,
-  connected through a 10bt hub, I get 910 Mbps on regular ethernet,
-  and only 650 Mbps on the VLAN device.  This was using a 30 MB file.
-</li>
-<P>
-<li> <b>Release 0.0.4 &mbsp; Spetember 27, 1999:</b><br>
-     Little or no new code changes, but it is now in CVS.  I'll be
-     working on getting the bugs out of the setup...
-</li>
-<P>
-<li> <b>Release 0.0.3 &nbsp; March 29, 1999:</b><br>
-     Modified the VLAN code to be a protocol, instead of
-     an unsightly hack into the ethernet code.  Modified vconfig to be
-     more useful, and got rid of all the l2switch stuff (too specialized,
-     and too inflexible.)</li>
 </ul><hr>
 <P>
 
+<center><h3>
+<a name="setup">VLAN Setup and Configuration</a></h3></center>
 
 To get started, you will want to download the <a href=vlan.tar.gz>vlan.tar.gz</a>
 file (to your $HOME directory.) Unpack it with your favorite commands, for
 example:  <tt> tar -xvzf vlan.tar.gz </tt>
-Alternatively, you can get it from the CVS Repository using something like this:<br>
+<a name="cvs_setup">Alternatively, you can get it from the CVS Repository using something like this:</a><br>
 <ol>
       <li> Install and configure 
 	<a href="http://www.loria.fr/~molli/cvs-index.html">cvs</a>
@@ -269,11 +261,8 @@ You will also need to give it an ip, eg: <tt>ifconfig -i vlan0005 192.168.2.1</t
 and configure it UP:  <tt>ifconfig -i vlan0005 up</tt>
 <P>
 
-<b>NOTE:</b>  it's hard to tell what a VLAN's ID is just by looking at it's
-listing that you get from: <tt>ifconfig -a</tt>.  You can get more information
-if you look at the <b>/proc/net/vlan/*</b> files:
-<P>
-<tt> cat /proc/net/vlan/config</tt>
+<b>NOTE:</b>  You can get lots of VLAN related configuration information from
+the <b>/proc/net/vlan/*</b> files by using 'cat' or 'more' to look at them.
 <P>
 
 Please get in contact with me if you have suggestions, patches, or other
@@ -281,10 +270,11 @@ comments.
 <P>
 
     <hr>
-    <address><a href="mailto:greearb@candelatech.com">greearb@candelatech.com</a></address>
+    <address><a href="mailto:greearb@candelatech.com">greearb@candelatech.com</a> &nbsp;
+             <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Sun Apr 23 13:48:48 MST 2000
+Last modified: Sun Aug 27 20:36:43 MST 2000
 <!-- hhmts end -->
   </body>
 </html>

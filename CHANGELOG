@@ -1,10 +1,37 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            August 27, 2000
+Version:         0.0.12
+Kernel Version:  2.2.16, 2.4.pre7
+Status:          Added several new features in the critical path...beware!
+Changes:         
+
+  		Added ability to re-order the VLAN packet so that it looks
+		like a real ethernet packet for the ingress pathway.  This
+		should help DHCP and other programs that insist on reading
+		the raw buffer and then make assumptions about byte offsets.
+		I don't have a good way to test this fully, so consider it
+		experimental :)  This behavior can be changed at run-time,
+		and is set on a per-VLAN basis.  The default is NOT to reorder
+		the header, which has been the only behavior up untill this
+		point.  The vconfig program can set/clear the flag, by using
+		a VLAN IOCTL.  You can read the flag's value from  the
+		/proc/net/vlan/vlan* files.
+		
+		You can also set a default priority on a NON-VLAN device.
+		This priority will only be used when the default_VID for the
+		device is set as well.  This priority won't be mapped anywhere,
+		just copied straight into the skb->priority.  It is a uint16.
+
+		The 2.3 patch is now the 2.4 patch, and it has been tested
+		against 2.4.pre7.
+
+
 Date:            April 23, 2000
 Version:         0.0.11
 Kernel Version:  2.2.13 & 2.2.14, 2.3.99
-Status:          Added several new features in the critical path...beware!
+Status:          As of August 27, this seems like a very stable patch.
 Changes:         
 		 Added real support for PRIORITY.  Through IOCTL calls (see the
 		 vconfig program), you can set explicit ingress and egress mappings

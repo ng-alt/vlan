@@ -45,4 +45,8 @@
 /ppp.h/1.1/Wed Oct 20 04:04:42 1999//
 /savefile.c/1.1/Wed Oct 20 04:04:42 1999//
 /scanner.l/1.1/Wed Oct 20 04:04:42 1999//
-D
+D/SUNOS4////
+D/bpf////
+D/lbl////
+D/linux-include////
+D/net////
