@@ -17,18 +17,17 @@ MTU problems exist for many ethernet drivers.  Other than that, things seem fair
 <P>
 
 <center>
-<B>PLUG: &nbsp; I'm currently starting a company that provides ethernet traffic generation and testing
-   equipment in a compact Linux based shelf:<br>
+<B>PLUG: &nbsp; Check out my company that makes traffic generation and WAN simulation
+   test equipment, based on the Linux operating system:<br>
     <a target=_top href="http://www.candelatech.com"><img src="http://www.candelatech.com/images/candela_swirl_small.png"
                                                       alt="Candela Technologies"
                                                       border=0></a>
 <br>
-Let us help you test your DSL, Cable Access, and other systems!</b>
+Let us help you test your DSL, Cable Access, Satellite and other network systems!</b>
 </center>
 <font size = -1>
 <BR>
-If you find this software useful, and wish to send me a tip, see
-<a href="http://scry.wanfear.com/~greear" target="_top"> my home page.</a><P>
+TIP jar on <a href="http://scry.wanfear.com/~greear" target="_top"> my home page.</a><P>
 </font>
 
 Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
@@ -61,10 +60,10 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <li> <a href="#setup"> VLAN Installation & Configuration info.</a></li>
 <li> <a href="#cvs_setup"> CVS Access.</a></li>
 <li> <a href="vlan/cisco_howto.html"> VLAN HOWTO/FAQ (Some CISCO & 3COM specific info too.)</a></li>
-<li> <a target=_top href="http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm">
-      http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm</a></li>
-<li> <a target=_top href="ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf">
-      ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf</a></li>
+<li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan.html"> VLAN Research page in Japonese</a></li>
+<li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan-e.html"> VLAN page translated to English</a></li>
+<li> <a target=_top href="http://standards.ieee.org/reading/ieee/std/lanman/802.1Q-1998.pdf">
+      IEEE 802.1Q Standard</a></li>
 <li> <a target=_top href="http://vlan.sourceforge.net">Alternate VLAN implementation.</a></li>
 </ul>
 <P>
@@ -89,6 +88,19 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.0.3.tar.gz">Release 1.0.3 (gz)</a> &nbsp; For Kernel: 2.4.7 &nbsp; August 5, 2001:</b><br>
+  <P>
+  <ul>
+   <li> Re-worked code to be more stable and more in-line with what the kernel maintainers
+        want to see before the VLAN patch is included into the kernel.</li>
+   <li> One of those requests was to change the default naming scheme to eth0.5, for a VLAN
+        of VID 5 on eth0.  You can over-ride this naming behaviour with the vconfig tool.</li>
+   <li> There were *NO* changes to the 2.2 series patch, and I don't expect to ever make
+        any more changes there...</li>
+  </ul>
+
+</li>
+
 <li> <b><a href="vlan/vlan.1.0.1.tar.gz">Release 1.0.1 (gz)</a> &nbsp; For Kernel: 2.2.18/19, 2.4.3-pre3 &nbsp; April 16, 2001:</b><br>
   <P>
   <ul>
@@ -263,25 +275,29 @@ out how to do patches that diff can handle (I think I did it right at least!).  
 will find the patch in the vlan directory.  It will be called:  vlan.patch,
 or something equally straight-foward. Apply the patch to your kernel:<p>
 
-NOTE: pick the correct patch for your kernel series.  The 2.3 kernel is very
-unstable at this point.
-<P>
-
 <tt>cd $HOME/linux<br>
 patch -p 1 &lt; $HOME/vlan/[vlan.patch]</br>
 </tt>
 <P>
 
-Now, build the vconfig program in the $HOME/vlan directory:<br>
+Your new, patched, kernel should be in your INCLUDE path before trying to
+compile the vconfig program.  One way to get things working is to link $HOME/linux
+to the 'linux' directory that you just un-zipped and patched.  A command might
+be something like:
+<tt>cd $HOME; ln -s /home/greear/kernel/2.4/linux.dev linux</tt>
+<P>
+
+Build the vconfig program in the $HOME/vlan directory:<br>
 <tt>cd $HOME/vlan<br>
 make<br>
 </tt>
 <P>
 
-
 Now, time to compile your new kernel!  Use the <tt>make xconfig</tt>
 command in your $HOME/linux directory to select your kernel options.  The
 option related to 802.1Q VLANs is found under the <b>Networking options</b>.
+If the option is not highlighted, make sure you select "Experimental Drivers"
+in one of the first xconfig menus.
 <P>
 
 Assuming your kernel compiled cleanly (yell if it didn't and you think my
@@ -290,7 +306,7 @@ in the normal manner (fix up your <tt>/etc/lilo.conf</tt> file appropriately and
 run <tt>lilo</tt> as root.)  Reboot your computer and choose your new kernel.
 <P>
 As your computer comes back to life, there will be little sign that you are
-now 802.1Q capable, other than two lines spit out during the boot process.
+now 802.1Q capable, other than a line spit out during the boot process.
 There should be a config programs in your $HOME/vlan
 directory:  <tt>vconfig</tt>.  <b>vconfig</b> is used
 to create and destroy VLAN devices. So, lets create a VLAN device on your
@@ -304,11 +320,11 @@ use it.  The command I usually use is:
 This attempts to create a VLAN device with VLAN-ID of 5 on the eth0 device.
 If you want to delete a VLAN, use something like:
 <P>
-<tt>vconfig rem vlan0005</tt>
+<tt>vconfig rem eth0.5</tt>
 <P>
 
-You will also need to give it an ip, eg: <tt>ifconfig -i vlan0005 192.168.2.1</tt><br>
-and configure it UP:  <tt>ifconfig -i vlan0005 up</tt>
+You will also need to give it an ip, eg: <tt>ifconfig -i eth0.5 192.168.2.1</tt><br>
+and configure it UP:  <tt>ifconfig -i eth0.5 up</tt>
 <P>
 
 <b>NOTE:</b>  You can get lots of VLAN related configuration information from
@@ -324,7 +340,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Mon Apr 16 21:46:26 MST 2001
+Last modified: Sun Aug  5 20:58:48 MST 2001
 <!-- hhmts end -->
   </body>
 </html>

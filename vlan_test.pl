@@ -2,6 +2,10 @@
 
 # For now, this just tests the addition and removal of 1000 VLAN interfaces on eth0
 
+# Arguments:
+#  graph  Generate a graph.
+#  clean  Remove interfaces.
+
 use strict;
 
 $| = 1;
@@ -135,19 +139,24 @@ if ($ARGV[0] ne "clean") {
 
   my $i;
   print "Adding VLAN interfaces 1 through $num_if\n";
+
+  print "Turnning off /sbin/hotplug";
+  `echo  > /proc/sys/kernel/hotplug`;
+
   my $p = time();
   for ($i = 1; $i<=$num_if; $i++) {
     `/usr/local/bin/vconfig add eth0 $i`;
-    `ifconfig vlan$i 192.168.$c.$d`;
-    `ifconfig vlan$i up`;
-    
+    #`ip address flush dev vlan$i`;
+    `ip address add 192.168.$c.$c/24 dev vlan$i`;
+    `ip link set dev vlan$i up`;
+
     if (($i <= 4000) && (($i % 50) == 0)) {
-      print "Doing ifconfig -a for $i devices.\n";
-      `time -p ifconfig -a > /tmp/vlan_test_ifconfig_a_$i.txt`;
+      #print "Doing ifconfig -a for $i devices.\n";
+      #`time -p ifconfig -a > /tmp/vlan_test_ifconfig_a_$i.txt`;
       print "Doing ip addr show for $i devices.\n";
       `time -p ip addr show > /tmp/vlan_test_ip_addr_$i.txt`;
     }
-    
+
     $d++;
     if ($d > 250) {
       $d = 5;
@@ -156,9 +165,9 @@ if ($ARGV[0] ne "clean") {
   }
   my $n = time();
   my $diff = $n - $p;
-  
+
   print "Done adding $num_if VLAN interfaces in $diff seconds.\n";
-  
+
   sleep 2;
 }
 
@@ -208,3 +217,7 @@ if ($ARGV[0] ne "clean") {
   $diff = $n - $p;
   print "Done adding/removing 2 VLAN interfaces $tmp times in $diff seconds.\n";
 }
+
+print "Re-installing /sbin/hotplug";
+`echo /sbin/hotplug > /proc/sys/kernel/hotplug`;
+

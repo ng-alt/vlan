@@ -11,7 +11,7 @@ MAKE=make
 #  Normally won't have to configure under here...
 ###################################################
 
-VERSION=0.0.14
+VERSION=1.0.2
 
 CUR_DATE=`date '+%y.%m.%d'`
 
@@ -23,5 +23,5 @@ LDLIBS =  -lm -lstring2 -lbitfield -lcrypt #-lnsl # -lsocket
 
 #  Other compilers may work, but I haven't tested with them.
 #  I don't suppose it could hurt to try though!
-CC = g++       # this is generally the c compiler, unused AFAIK
-CCC = g++      # this is generally the c++ compiler
+CC = cc       # this is generally the c compiler, unused AFAIK
+CCC = gcc      # this is generally the c++ compiler
