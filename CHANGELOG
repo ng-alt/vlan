@@ -1,5 +1,17 @@
 This file should be prepended to each time a release is made.
 
+Date:            Sept 30, 2003
+Version:         1.8
+Kernel Version:  2.4.21+
+Changes:         Compile fixes for newer gcc, VLAN rework, inclusion of entire
+                 Candela Technologies kernel networking patch (MAC-VLANs too).
+
+Date:            March 11, 2003
+Version:         1.7
+Kernel Version:  2.4.14+
+Changes:         Added Alex's MAC-Vlan code to the repository.  See README for more.
+
+
 Date:            March 24, 2002
 Version:         1.6
 Kernel Version:  2.4.14+
@@ -8,7 +20,6 @@ Changes:         Removed 2.4 kernel patch from VLAN distribution..it's now in th
                  to fix some compile problems, and to enable cross-compiling to
                  ARM (this assumes you are using the Intrinsyc cross-compiler in
                  it's standard location).
-
 
 
 Date:            Oct 20, 2001

@@ -30,11 +30,11 @@ Let us help you test your DSL, Cable Access, Satellite and other network systems
 TIP jar on <a href="http://www.candelatech.com/~greear" target="_top"> my home page.</a><P>
 </font>
 
-Join the <a HREF="http://www.candelatech.com/mailman/listinfo/vlan">vlan mailing list</a>, 
+Join the <a HREF="http://ns1.wanfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
  After that, to post, send mail to 
-<A HREF="mailto:vlan@candelatech.com">vlan@candelatech.com</a>.
+<A HREF="mailto:vlan@ns1.wanfear.com">vlan@ns1.wanfear.com</a>.
 <P>
-Submit a bug/issue/enhancement with the:  <a href="http://grok.yi.org/~greear/bugzilla/enter_bug.cgi?product=VLAN%20for%20Linux">VLAN Bugzilla</a></li>
+Submit a bug/issue/enhancement with the:  <a href="http://grok.yi.org:8080/~greear/bugzilla/enter_bug.cgi?product=VLAN%20for%20Linux">VLAN Bugzilla</a></li>
 <P>
 
 I hear that the 2.2/2.4 kernel patches have worked
@@ -71,6 +71,8 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <center><b>Features</b></center>
 <ul>
  <li>Implements 802.1Q VLAN spec.</li>
+ <li>Implements support for a non-standard (as far as I know)
+     MAC-based VLAN functionality.  Primary author is: Alex Zeffertt</li>
  <li>Can support up to 4094 VLANs per ethernet interface.</li>
  <li>Scales well in critical paths: O(n), where n is the number of PHYSICAL ethernet interfaces,
      and that is only on ingress.  O(1) in every other critical path, as far as I know.</li>
@@ -85,6 +87,7 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 </ul>
 <P>
 
+
 <hr>
 Download vconfig binaries (source is more flexible, but this will work for most people).
 <ul>
@@ -97,6 +100,17 @@ Download vconfig binaries (source is more flexible, but this will work for most 
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.7m.tar.gz">Release 1.7m (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; Feb 27, 2003:</b><br>
+  <P>
+  <ul>
+   <li>Added Alex Zeffertt's MAC-based VLAN code.  Not fully functional
+       yet (mostly because I broke his original work...gonna fix it up
+       soon.  Grab & use his raw patch* files in the meantime.
+   </li>
+  </ul>
+</li>
+<P>
+
 <li> <b><a href="vlan/vlan.1.7.tar.gz">Release 1.7 (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; Feb 27, 2003:</b><br>
   <P>
   <ul>
@@ -313,7 +327,7 @@ example:  <tt> tar -xvzf vlan.1.6.tar.gz </tt>
 	<a href="http://www.loria.fr/~molli/cvs-index.html">cvs</a>
 	  on your machine.</li>
 	<li> Specify the vlan repository:<br>
-	<b>export CVSROOT=:pserver:anonymous@scry.wanfear.com:/home/cvs/vlan</b>
+	<b>export CVSROOT=:pserver:anonymous@ns1.wanfear.com:/home/cvs/vlan</b>
 	</li>
 	<li> Log in to the repository:<br>
 	<b>cvs login &nbsp; &nbsp; (PASSWORD: anonymous)</b>
@@ -402,7 +416,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Thu Feb 27 22:23:45 PST 2003
+Last modified: Tue Apr  8 08:44:00 PDT 2003
 <!-- hhmts end -->
   </body>
 </html>

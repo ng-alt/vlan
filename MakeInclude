@@ -30,6 +30,6 @@ ifeq "${PLATFORM}" "ARM"
 else
    #echo "Building for x86 platform."
    STRIP=strip
-   CC = g++       # this is generally the c compiler, unused AFAIK
+   CC = gcc       # this is generally the c compiler, unused AFAIK
    CCC = g++      # this is generally the c++ compiler
 endif
