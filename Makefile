@@ -20,7 +20,7 @@ vconfig.h: Makefile
 
 
 ${VCONFIG}: $(VLAN_OBJS)
-	$(CCC) $(CCFLAGS) $(LDFLAGS) -o $(VCONFIG) $(VLAN_OBJS) $(LDLIBS)
+	$(CC) $(CCFLAGS) $(LDFLAGS) -o $(VCONFIG) $(VLAN_OBJS) $(LDLIBS)
 
 
 $(ALL_OBJS): %.o: %.c %.h

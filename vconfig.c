@@ -16,13 +16,10 @@ static char* usage =
       "
 Usage: add             [interface-name] [vlan_id]
        rem             [vlan-name]
-       set_dflt        [interface-name] [vlan_id]
-       set_dflt_prio   [interface-name] [dflt_priority]
        set_flag        [interface-name] [flag-num]       [0 | 1]
        set_egress_map  [vlan-name]      [skb_priority]   [vlan_qos]
        set_ingress_map [vlan-name]      [skb_priority]   [vlan_qos]
        set_name_type   [name-type]
-       set_bind_mode   [bind-type]
 
 * The [interface-name] is the name of the ethernet card that hosts
   the VLAN you are talking about.
@@ -40,9 +37,6 @@ Usage: add             [interface-name] [vlan_id]
             location of bytes.  If you don't need it, don't turn it on, because
             there will be at least a small performance degradation.  Default
             is OFF.
-* dflt_priority:  If you want to add a default-priority to your default-vlan,
-            then use this to set it.  The priority will not be mapped, and will
-            only be used on ingress.  It can only be added to NON-VLAN devices.
 ";
 
 void show_usage() {
@@ -94,7 +88,6 @@ int main(int argc, char** argv) {
    unsigned int skb_priority;
    unsigned short vlan_qos;
    unsigned int nm_type = VLAN_NAME_TYPE_PLUS_VID;
-   unsigned int bind_type = VLAN_BIND_PER_KERNEL;
 
    char* conf_file_name = "/proc/net/vlan/config";
 
@@ -133,23 +126,6 @@ int main(int argc, char** argv) {
             exit(1);
          }
          if_request.u.name_type = nm_type;
-      }
-      else if (strcasecmp(cmd, "set_bind_mode") == 0) {
-         if (strcasecmp(argv[2], "PER_DEVICE") == 0) {
-            bind_type = VLAN_BIND_PER_INTERFACE;
-         }
-         else if (strcasecmp(argv[2], "PER_KERNEL") == 0) {
-            bind_type = VLAN_BIND_PER_KERNEL;
-         }
-         else {
-            // MATHIEU
-            //cerr << "Invalid bind type.\n";
-            fprintf(stderr,"Invalid bind type.\n");
-
-                    show_usage();
-            exit(1);
-         }
-         if_request.u.bind_type = bind_type;
       }
       else {
          if_name = argv[2];
@@ -220,42 +196,6 @@ int main(int argc, char** argv) {
                  //     << if_name << ":-" << endl;
          fprintf(stdout,"Removed VLAN -:%s:-\n", if_name);
 
-      }
-   }//if
-   else if (strcasecmp(cmd, "set_dflt") == 0) {
-      if (ioctl(fd, SET_DEFAULT_VLAN_ID_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set default VID #" << vid << " on IF -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
-         fprintf(stderr,"ERROR: trying to set default VID #%u on IF -:%s:- error: %s\n",
-                            vid, if_name, strerror(errno));
-          
-          }
-      else {
-         // MATHIEU
-         //cout << "Set default VID #" << vid << " on IF -:"
-         //     << if_name << ":-" << endl;
-         fprintf(stdout,"Set default VID #%u on IF -:%s:-\n",
-                        vid, if_name);
-         
-      }
-   }//if
-   else if (strcasecmp(cmd, "set_dflt_prio") == 0) {
-      if (ioctl(fd, SET_DEFAULT_VLAN_PRIORITY_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set default PRIORITY " << vid << " on IF -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
-         fprintf(stderr,"ERROR: trying to set default PRIORITY %u on IF -:%s:- error: %s\n",
-                            vid, if_name, strerror(errno));
-         
-      }
-      else {
-         // MATHIEU
-         //cout << "Set default PRIORITY " << vid << " on IF -:"
-         //     << if_name << ":-" << endl;
-         fprintf(stdout,"Set default PRIORITY %u on IF -:%s:-\n",
-                            vid, if_name);
-         
       }
    }//if
    else if (strcasecmp(cmd, "set_egress_map") == 0) {
@@ -333,24 +273,6 @@ int main(int argc, char** argv) {
          
       }
    }
-   else if (strcasecmp(cmd, "set_bind_mode") == 0) {
-      if (ioctl(fd, SET_BIND_TYPE_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set bind type for VLAN subsystem. error: "
-         //     << strerror(errno) << endl;
-         fprintf(stderr,"ERROR: trying to set bind type for VLAN subsystem. error: %s\n",
-                                strerror(errno));
-         
-      }
-      else {
-         // MATHIEU
-         //cout << "Set bind-type for VLAN subsytem.  Should be visible in /proc/net/vlan/config"
-         //     << endl;
-         fprintf(stdout,"Set bind-type for VLAN subsytem."
-                            "  Should be visible in /proc/net/vlan/config\n");
-         
-      }
-   }   
    else {
       // MATHIEU
       //cerr << "Unknown command -:" << cmd << ":-\n";

@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated Oct 11, 2000<br>
-Release:  0.0.13</br>
+Updated Oct 26, 2000<br>
+Release:  0.0.14</br>
 </i></center>
 <P>
 
@@ -73,13 +73,47 @@ Here are the numbers:<br>
 </ul>
 <P>
 
+<center><b>Features</b></center>
+<ul>
+ <li>Implements 802.1Q VLAN spec.</li>
+ <li>Can support up to 4094 VLANs per ethernet interface.</li>
+ <li>Scales well in critical paths: O(1), as far as I can tell.</li>
+ <li>Hashed device lookup tables in the kernel, for better scalability in non-critical paths.</li>
+ <li>Supports MULTICAST.</li>
+ <li>Can change MAC address of VLAN.</li>
+ <li>Multiple naming conventions supported, and adjustable at runtime.</li>
+ <li>Optional header-reordering, to make the VLAN interface look <b>JUST LIKE</b>
+     an Ethernet interface.  This fixes some problems with DHCPd.  You also have the
+     option to turn it off, which works for every other protocol I know about, and is
+     slightly faster.
+ </li>
+</ul>
+<P>
 <hr>
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.0.0.14.tar.gz">Release 0.0.14 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 26, 2000:</b><br>
+  <center><b>NOT WELL TESTED YET, use 0.0.12 if un-brave</b></center>
+  <P>
+  This code is probably still less stable than 0.0.12, but it should be a big improvement
+  over 0.0.13.
+  <ul>
+   <li>Removed vlan-space-per-machine, so vlan-space-per-NIC is mandatory now.</li>
+   <li>DHCP might work now, as I've added support for encapsulating regular ethernet
+       frames if they are sent to the vlan driver.</li>
+   <li>Fixed up the name/index hashing stuff to handle changing the name on a device.</li>
+   <li>Took out default VID & default priority, as their usefullness was in question,
+       and the code was broken anyway.</li>
+  </ul>
+
+</li>
+
+<P>
 <li> <b><a href="vlan/vlan.0.0.13.tar.gz">Release 0.0.13 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 11, 2000:</b><br>
   <center><b>NOT WELL TESTED YET, use 0.0.12 if un-brave</b></center>
   <P>
+  NOTE:  This is very broken...try 0.0.14 or 0.0.12 instead.
   <ul>
    <li>Added support for MULTICAST to the VLAN devices.  Thanks to
        <a href="http://vlan.sourceforge.net" target=_top>Gleb & Co</a> for most of
@@ -303,7 +337,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Wed Oct 11 22:04:36 MST 2000
+Last modified: Thu Oct 26 22:16:23 MST 2000
 <!-- hhmts end -->
   </body>
 </html>

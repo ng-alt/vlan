@@ -1,12 +1,27 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            October 26, 2000
+Version:         0.0.14
+Kernel Version:  2.2.17, 2.4.pre9
+Status:          This one is pretty fresh..beware, especially the new features.
+Changes:         
+		 Removed vlan-space-per-machine, so vlan-space-per-NIC is mandatory now.
+
+   		 DHCP might work now, as I've added support for encapsulating regular ethernet
+       		 frames if they are sent to the vlan driver.
+
+  		 Fixed up the name/index hashing stuff to handle changing the name on a device.
+
+   		 Took out default VID & default priority, as their usefullness was in question,
+                 and the code was broken anyway.
+
+
 Date:            October 11, 2000
 Version:         0.0.13
 Kernel Version:  2.2.17, 2.4.pre9
 Status:          This one is pretty fresh..beware, especially the new features.
 Changes:         
-
 	        Added support for MULTICAST to the VLAN devices. Thanks to
 	        Gleb & Co for most of that code. 
         
@@ -29,6 +44,7 @@ Changes:
 	        functionality, I believe.
 
 		Removed the dhcp stuff from the VLAN distribution.
+
 
 Date:            August 27, 2000
 Version:         0.0.12

@@ -1,6 +1,6 @@
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_ether.h linux.dev/include/linux/if_ether.h
 *** linux/include/linux/if_ether.h	Tue Jul 11 11:12:24 2000
---- linux.dev/include/linux/if_ether.h	Sun Oct  8 00:13:19 2000
+--- linux.dev/include/linux/if_ether.h	Sun Oct 15 00:12:04 2000
 ***************
 *** 33,36 ****
 --- 33,66 ----
@@ -48,11 +48,11 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_eth
   #define ETH_P_IPV6	0x86DD		/* IPv6 over bluebook		*/
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vlan.h linux.dev/include/linux/if_vlan.h
 *** linux/include/linux/if_vlan.h	Wed Dec 31 17:00:00 1969
---- linux.dev/include/linux/if_vlan.h	Wed Oct 11 21:11:25 2000
+--- linux.dev/include/linux/if_vlan.h	Thu Oct 26 00:27:22 2000
 ***************
 *** 0 ****
---- 1,258 ----
-+ /*
+--- 1,241 ----
++ /* -*- linux-c -*-
 +  * VLAN		An implementation of 802.1Q VLAN tagging.
 +  *
 +  *  For some idea of the architecture, see the web page at (curently):
@@ -84,9 +84,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + struct packet_type;
 + struct vlan_collection;
 + 
-+ /* early declaration of structs in this file */
-+ struct vlan_port;
-+ struct vlan_port_collection;
 + 
 + #include <linux/proc_fs.h> /* for proc_dir_entry */
 + #include <linux/netdevice.h>
@@ -99,7 +96,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 +  *  NOT follow the spec for VLANs, but may be useful for doing very
 +  *  large quantities of VLAN MUX/DEMUX onto FrameRelay or ATM PVCs.
 +  */
-+ struct net_device *find_802_1Q_vlan_dev(const char* real_mac_addr,
++ struct net_device *find_802_1Q_vlan_dev(struct net_device* real_dev,
 +                                         unsigned short VID); /* vlan.c */
 + 
 + 
@@ -122,14 +119,12 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + int vlan_dev_init(struct net_device* dev);
 + void vlan_dev_destruct(struct net_device* dev);
 + /*  I'm ignorant of these right now. --BLG
-+ int vlan_dev_header_cache(struct neighbour *neigh, struct hh_cache *hh);
-+ void vlan_dev_header_cache_update(struct hh_cache *hh, struct device *dev,
-+                                   unsigned char * haddr);
++     int vlan_dev_header_cache(struct neighbour *neigh, struct hh_cache *hh);
++     void vlan_dev_header_cache_update(struct hh_cache *hh, struct device *dev,
++     unsigned char * haddr);
 + */
 + void vlan_dev_copy_and_sum(struct sk_buff *dest, unsigned char *src,
 +                            int length, int base);
-+ int vlan_dev_set_dflt_vid(char* dev_name, unsigned short vid);
-+ int vlan_dev_set_dflt_priority(char* dev_name, unsigned short vid);
 + int vlan_dev_set_ingress_priority(char* dev_name, __u32 skb_prio, short vlan_prio);
 + int vlan_dev_set_egress_priority(char* dev_name, __u32 skb_prio, short vlan_prio);
 + int vlan_dev_set_vlan_flag(char* dev_name, __u32 flag, short flag_val);
@@ -171,88 +166,84 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + #define VLAN_GROUP_ARRAY_LEN 4096
 + 
 + struct vlan_group {
-+    unsigned char real_mac[6]; /* The mac of the ethernet card the vlan is attached to. */
-+    struct net_device* vlan_devices[VLAN_GROUP_ARRAY_LEN];
++         int real_dev_ifindex; /* The ifindex of the ethernet(like) device the vlan is attached to. */
++         struct net_device* vlan_devices[VLAN_GROUP_ARRAY_LEN];
 +    
-+    struct vlan_group* next; /* the next in the list */
++         struct vlan_group* next; /* the next in the list */
 + };
 + 
 + 
-+ /* __Flags__ relating to the vlan ports */
-+ #define VLAN_FLAG_ALLOW_802_3   1
-+ #define VLAN_FLAG_ALLOW_802_1Q  2
-+ #define VLAN_FLAG_IS_IN_USE     4
-+ 
-+ 
 + struct vlan_priority_tci_mapping {
-+    unsigned long priority;
-+    unsigned short vlan_qos; /* This should be shifted when first set, so we only do it
-+                              * at provisioning time.
-+                              * ((skb->priority << 13) & 0xE000)
-+                              */
-+    struct vlan_priority_tci_mapping* next;
++         unsigned long priority;
++         unsigned short vlan_qos; /* This should be shifted when first set, so we only do it
++                                   * at provisioning time.
++                                   * ((skb->priority << 13) & 0xE000)
++                                   */
++         struct vlan_priority_tci_mapping* next;
 + };
 + 
 + 
 + 
 + /* Holds information that makes sense if this device is a VLAN device. */
 + struct vlan_dev_info {
-+    /** This will be the mapping that correlates skb->priority to
-+     * 3 bits of VLAN QOS tags...
-+     */
-+    unsigned long ingress_priority_map[8];
-+    struct vlan_priority_tci_mapping* egress_priority_map[16]; /* hash table */
++         /** This will be the mapping that correlates skb->priority to
++          * 3 bits of VLAN QOS tags...
++          */
++         unsigned long ingress_priority_map[8];
++         struct vlan_priority_tci_mapping* egress_priority_map[16]; /* hash table */
 + 
-+    unsigned short vlan_id;        /*  The VLAN Identifier for this interface. */
-+    unsigned short flags;          /* (1 << 0) re_order_header   This option will cause the
-+                                    *   VLAN code to move around the ethernet header on
-+                                    *   ingress to make the skb look **exactly** like it
-+                                    *   came in from an ethernet port.  This destroys some of
-+                                    *   the VLAN information in the skb, but it fixes programs
-+                                    *   like DHCP that use packet-filtering and don't understand
-+                                    *   802.1Q
-+                                    */
-+    struct dev_mc_list* old_mc_list;  /* old multi-cast list for the VLAN interface..
-+                                       * we save this so we can tell what changes were
-+                                       * made, in order to feed the right changes down
-+                                       * to the real hardware...
-+                                       */
-+    int old_allmulti;               /* similar to above. */
-+    int old_promiscuity;            /* similar to above. */
-+    struct net_device* real_dev;    /* the underlying device/interface */
-+    struct proc_dir_entry* dent;    /* Holds the proc data */
++         unsigned short vlan_id;        /*  The VLAN Identifier for this interface. */
++         unsigned short flags;          /* (1 << 0) re_order_header   This option will cause the
++                                         *   VLAN code to move around the ethernet header on
++                                         *   ingress to make the skb look **exactly** like it
++                                         *   came in from an ethernet port.  This destroys some of
++                                         *   the VLAN information in the skb, but it fixes programs
++                                         *   like DHCP that use packet-filtering and don't understand
++                                         *   802.1Q
++                                         */
++         struct dev_mc_list* old_mc_list;  /* old multi-cast list for the VLAN interface..
++                                            * we save this so we can tell what changes were
++                                            * made, in order to feed the right changes down
++                                            * to the real hardware...
++                                            */
++         int old_allmulti;               /* similar to above. */
++         int old_promiscuity;            /* similar to above. */
++         struct net_device* real_dev;    /* the underlying device/interface */
++         struct proc_dir_entry* dent;    /* Holds the proc data */
++         unsigned long cnt_inc_headroom_on_tx; /* How many times did we have to grow the skb on TX. */
++         unsigned long cnt_encap_on_xmit;      /* How many times did we have to encapsulate the skb on TX. */
 + };
 + 
 + /* inline functions */
 + 
 + static inline unsigned short vlan_dev_get_egress_qos_mask(struct net_device* dev, struct sk_buff* skb) {
-+    struct vlan_priority_tci_mapping* mp = dev->vlan_dev->egress_priority_map[(skb->priority & 0xF)];
-+    while (mp) {
-+       if (mp->priority == skb->priority) {
-+          return mp->vlan_qos; /* This should already be shifted to mask correctly with
-+                                * the VLAN's TCI
-+                                */
-+       }
-+       mp = mp->next;
-+    }
-+    return 0;
++         struct vlan_priority_tci_mapping* mp = dev->vlan_dev->egress_priority_map[(skb->priority & 0xF)];
++         while (mp) {
++                 if (mp->priority == skb->priority) {
++                         return mp->vlan_qos; /* This should already be shifted to mask correctly with
++                                               * the VLAN's TCI
++                                               */
++                 }
++                 mp = mp->next;
++         }
++         return 0;
 + }
 + 
 +    
 + static inline int vlan_dmi_equals(struct dev_mc_list *dmi1,
 +                                   struct dev_mc_list *dmi2) {
-+    return ((dmi1->dmi_addrlen == dmi2->dmi_addrlen) &&
-+            (memcmp(dmi1->dmi_addr, dmi2->dmi_addr, dmi1->dmi_addrlen) == 0));
++         return ((dmi1->dmi_addrlen == dmi2->dmi_addrlen) &&
++                 (memcmp(dmi1->dmi_addr, dmi2->dmi_addr, dmi1->dmi_addrlen) == 0));
 + }
 + 
 + static inline void vlan_destroy_mc_list(struct dev_mc_list *mc_list) {
-+    struct dev_mc_list *dmi = mc_list, *next;
++         struct dev_mc_list *dmi = mc_list, *next;
 + 
-+    while(dmi) {
-+       next = dmi->next;
-+       kfree(dmi);
-+       dmi = next;
-+    }
++         while(dmi) {
++                 next = dmi->next;
++                 kfree(dmi);
++                 dmi = next;
++         }
 + }
 + 
 + #endif /* __KERNEL__ */
@@ -266,53 +257,45 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/if_vla
 + #define VLAN_IOCTL 0x52 /* TODO:  Can I just make these up??? */
 + 
 + enum vlan_ioctls {
-+    ADD_VLAN_IOCTL = (VLAN_IOCTL << 8),
-+    DEL_VLAN_IOCTL,
-+    SET_DEFAULT_VLAN_ID_IOCTL,
-+    SET_INGRESS_PRIORITY_IOCTL,
-+    SET_EGRESS_PRIORITY_IOCTL,
-+    GET_INGRESS_PRIORITY_IOCTL,
-+    GET_EGRESS_PRIORITY_IOCTL,
-+    SET_NAME_TYPE_IOCTL,
-+    SET_BIND_TYPE_IOCTL,
-+    SET_VLAN_FLAG_IOCTL,
-+    SET_DEFAULT_VLAN_PRIORITY_IOCTL
++         ADD_VLAN_IOCTL = (VLAN_IOCTL << 8),
++         DEL_VLAN_IOCTL,
++         SET_INGRESS_PRIORITY_IOCTL,
++         SET_EGRESS_PRIORITY_IOCTL,
++         GET_INGRESS_PRIORITY_IOCTL,
++         GET_EGRESS_PRIORITY_IOCTL,
++         SET_NAME_TYPE_IOCTL,
++         SET_VLAN_FLAG_IOCTL
 + }; /* vlan_ioctl enum */
 + 
 + 
 + enum vlan_name_types {
-+    VLAN_NAME_TYPE_PLUS_VID, /* Name will look like:  vlan0005 */
-+    VLAN_NAME_TYPE_RAW_PLUS_VID, /* name will look like:  eth1.0005 */
-+    VLAN_NAME_TYPE_PLUS_VID_NO_PAD, /* Name will look like:  vlan5 */
-+    VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD, /* Name will look like:  eth0.5 */
-+    VLAN_NAME_TYPE_HIGHEST
-+ };
-+ 
-+ enum vlan_bind_type {
-+    VLAN_BIND_PER_KERNEL,
-+    VLAN_BIND_PER_INTERFACE
++         VLAN_NAME_TYPE_PLUS_VID, /* Name will look like:  vlan0005 */
++         VLAN_NAME_TYPE_RAW_PLUS_VID, /* name will look like:  eth1.0005 */
++         VLAN_NAME_TYPE_PLUS_VID_NO_PAD, /* Name will look like:  vlan5 */
++         VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD, /* Name will look like:  eth0.5 */
++         VLAN_NAME_TYPE_HIGHEST
 + };
 + 
 + struct vlan_ioctl_args {
-+    char dev1[24];
++         char dev1[24];
 + 
-+    union {
-+       char dev2[24];
-+       int VID;
-+       unsigned long skb_priority;
-+       unsigned long name_type;
-+       unsigned long bind_type;
-+       unsigned long flag; /* Matches vlan_dev_info flags */
-+    } u;
++         union {
++                 char dev2[24];
++                 int VID;
++                 unsigned long skb_priority;
++                 unsigned long name_type;
++                 unsigned long bind_type;
++                 unsigned long flag; /* Matches vlan_dev_info flags */
++         } u;
 + 
-+    short vlan_qos;   
++         short vlan_qos;   
 + };
 + 
 + 
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdevice.h linux.dev/include/linux/netdevice.h
 *** linux/include/linux/netdevice.h	Mon Oct  2 12:04:52 2000
---- linux.dev/include/linux/netdevice.h	Sun Oct  8 00:13:19 2000
+--- linux.dev/include/linux/netdevice.h	Wed Oct 25 23:40:28 2000
 ***************
 *** 38,43 ****
 --- 38,50 ----
@@ -330,6 +313,26 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
   #define NET_XMIT_SUCCESS	0
   #define NET_XMIT_DROP		1	/* skb dropped			*/
 ***************
+*** 60,64 ****
+--- 67,75 ----
+   
+  #if !defined(CONFIG_AX25) && !defined(CONFIG_AX25_MODULE) && !defined(CONFIG_TR)
++ #if defined(CONFIG_VLAN_802_1Q)
++ #define LL_MAX_HEADER	36
++ #else
+  #define LL_MAX_HEADER	32
++ #endif
+  #else
+  #if defined(CONFIG_AX25) || defined(CONFIG_AX25_MODULE)
+***************
+*** 69,72 ****
+--- 80,84 ----
+  #endif
+  
++ 
+  #if !defined(CONFIG_NET_IPIP) && \
+      !defined(CONFIG_IPV6) && !defined(CONFIG_IPV6_MODULE)
+***************
 *** 171,180 ****
   	struct hh_cache *hh_next;	/* Next entry			     */
   	atomic_t	hh_refcnt;	/* number of users                   */
@@ -341,7 +344,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
 ! 	unsigned long	hh_data[16/sizeof(unsigned long)];
   };
   
---- 178,196 ----
+--- 183,201 ----
   	struct hh_cache *hh_next;	/* Next entry			     */
   	atomic_t	hh_refcnt;	/* number of users                   */
 ! 	unsigned short  hh_type;	/* protocol identifier, f.e ETH_P_IP
@@ -363,45 +366,15 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/netdev
   
 ***************
 *** 383,386 ****
---- 399,419 ----
+--- 404,413 ----
   	struct dst_entry	*fastpath[NETDEV_FASTROUTE_HMASK+1];
   #endif
 + 
 + #ifdef CONFIG_VLAN_802_1Q
 +    /*  Holds information that makes sense if this device is a VLAN device. */
 +         struct vlan_dev_info* vlan_dev;
-+ 
-+    /*  If this device is not a VLAN device, but we are bridging VLANs,
-+     *  then we must have a default VID that can be assigned (if configured
-+     *  to do so) to all frames from this device.  If zero, then we
-+     *  WILL NOT turn the packet into a vlan packet.
-+     */
-+         unsigned short default_vid;  /* VID to be assigned by default. */
-+    /* If the default-priority is set, and the default_vid is set, then the
-+     * default_priority will be used for the default-VLAN.
-+     */
-+         unsigned short default_priority; /* Priority to be assigned on a default VLAN */
 + #endif
 + 
-  };
-  
-diff -P -C 2 -X /home/greear/exclude.list --recursive linux/include/linux/skbuff.h linux.dev/include/linux/skbuff.h
-*** linux/include/linux/skbuff.h	Mon Oct  2 12:04:52 2000
---- linux.dev/include/linux/skbuff.h	Sun Oct  8 00:13:19 2000
-***************
-*** 147,150 ****
---- 147,159 ----
-         __u32           tc_index;               /* traffic control index */
-  #endif
-+ 
-+ #if defined(CONFIG_VLAN_802_1Q)
-+    /* I think this will help keep me from sending the packet
-+     * back down the port that it arrived on.  Kind of a special
-+     * case in the egress rules. (Used when bridging only.)  --BLG
-+     * TODO:  Make sure this is used or deleted.
-+     */
-+    struct vlan_port* arriving_port;
-+ #endif
   };
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/Makefile linux.dev/net/802_1Q/Makefile
@@ -462,11 +435,11 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/sysctl_ne
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c linux.dev/net/802_1Q/vlan.c
 *** linux/net/802_1Q/vlan.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan.c	Wed Oct 11 20:51:38 2000
+--- linux.dev/net/802_1Q/vlan.c	Wed Oct 25 23:53:14 2000
 ***************
 *** 0 ****
---- 1,466 ----
-+ /*
+--- 1,455 ----
++ /* -*- linux-c -*-
 +  * INET		An implementation of the TCP/IP protocol suite for the LINUX
 +  *		operating system.  INET is implemented using the  BSD Socket
 +  *		interface as the means of communication with the user level.
@@ -513,22 +486,22 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 + 
 + static char vlan_fullname[] = "802.1Q VLAN Support";
 + static unsigned int vlan_version = 0;
-+ static unsigned int vlan_release = 13;
++ static unsigned int vlan_release = 14;
 + static char vlan_copyright[] = " Ben Greear <greearb@candelatech.com>";
 + 
 + 
 + /** These may be changed at run-time through IOCTLs */
-+ unsigned char vlan_configured_multiple_groups = 1; /* boolean */
 + unsigned short vlan_name_type = 0; /* determines interface naming scheme */
++ unsigned long vlan_bad_proto_recvd = 0; /* Counter for how many NON-VLAN protos we've received on a VLAN. */
 + 
 + 
 + static struct packet_type vlan_packet_type = 
 + {
-+    0,      /* MUTTER ntohs(ETH_P_802_1Q),*/
-+    NULL,
-+    vlan_dev_type_trans, /* VLAN receive method */
-+    NULL,
-+    NULL,
++         0,      /* MUTTER ntohs(ETH_P_802_1Q),*/
++         NULL,
++         vlan_dev_type_trans, /* VLAN receive method */
++         NULL,
++         NULL,
 + };
 + 
 + /* End of global variables definitions. */
@@ -548,10 +521,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +  *	Context:	process
 +  */
 + int init_module	(void) {
-+    printk(VLAN_INF __FUNCTION__);
++         printk(VLAN_INF __FUNCTION__);
 + 
-+    vlan_proto_init(NULL);
-+    return 0;
++         vlan_proto_init(NULL);
++         return 0;
 + }
 + 
 + /*
@@ -559,7 +532,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +  *	o delete /proc/net/router directory and static entries.
 +  */ 
 + void cleanup_module (void) {
-+    vlan_proto_cleanup(); // TODO: Define this so modules work.  Clean up ports.
++         vlan_proto_cleanup(); // TODO: Define this so modules work.  Clean up ports.
 + }
 + 
 + #else
@@ -567,10 +540,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 + 
 + /** Non-module init entry point. */
 + void __init vlan_system_init(void) {
-+    printk(VLAN_INF __FUNCTION__);
++         printk(VLAN_INF __FUNCTION__);
 + 
-+    /* protocol initialization */
-+    vlan_proto_init(NULL);
++         /* protocol initialization */
++         vlan_proto_init(NULL);
 + 
 + }
 + #endif
@@ -583,62 +556,54 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +  */
 + void vlan_proto_init(struct net_proto *pro) {
 + 
-+    int err;
-+    printk(VLAN_INF "%s v%u.%u %s\n",
-+           vlan_fullname, vlan_version, vlan_release, vlan_copyright);
++         int err;
++         printk(VLAN_INF "%s v%u.%u %s\n",
++                vlan_fullname, vlan_version, vlan_release, vlan_copyright);
 + 
-+    /* proc file system initialization */
-+    err = vlan_proc_init();
-+    if (err < 0) {
-+       printk(KERN_ERR __FUNCTION__
-+              "%s: can't create entry in proc filesystem!\n", VLAN_NAME);
-+    }
++         /* proc file system initialization */
++         err = vlan_proc_init();
++         if (err < 0) {
++                 printk(KERN_ERR __FUNCTION__
++                        "%s: can't create entry in proc filesystem!\n", VLAN_NAME);
++         }
 + 
-+    /* network byte order!! */
-+    vlan_packet_type.type = htons(ETH_P_802_1Q);
-+    dev_add_pack(&vlan_packet_type);
-+    printk(VLAN_INF "%s Initialization complete.\n", VLAN_NAME);
++         /* network byte order!! */
++         vlan_packet_type.type = htons(ETH_P_802_1Q);
++         dev_add_pack(&vlan_packet_type);
++         printk(VLAN_INF "%s Initialization complete.\n", VLAN_NAME);
 + }
 + 
 + 
 + 
-+ /**  At one time, I was going to let each Physical device have
-+  * it's own 4096 VLANs.  The spec says I should do otherwise.
-+  * However, for my own personal amusement, I'm going to give
-+  * one the ability to configure this.  The default will be to
-+  * just return the first one (as per the spec).
++ /**  Will search linearly for now, based on device index.  Could
++  * hash, or directly link, this some day. --Ben
 +  */
-+ struct vlan_group* vlan_find_group(const char* mac) {
-+    struct vlan_group* grp = NULL;
++ struct vlan_group* vlan_find_group(int real_dev_ifindex) {
++         struct vlan_group* grp = NULL;
 + 
-+    if (vlan_configured_multiple_groups && mac) {
-+       for (grp = p802_1Q_vlan_list;
-+            ((grp != NULL) && (memcmp(mac, grp->real_mac, ETH_ALEN)));
-+            grp = grp->next) {
-+          ;
-+       } /* for */
-+          
-+       return grp;
-+    }
-+    else {
-+       return p802_1Q_vlan_list;
-+    }
++         for (grp = p802_1Q_vlan_list;
++              ((grp != NULL) && (grp->real_dev_ifindex != real_dev_ifindex));
++              grp = grp->next) {
++            ;
++         } /* for */
++         
++         return grp;
 + }
 + 
 + /*  Find the protocol handler.  Assumes VID < 0xFFF.
 +  */
-+ struct net_device *find_802_1Q_vlan_dev(const char* real_mac_addr,
-+                                     unsigned short VID) {
++ struct net_device *find_802_1Q_vlan_dev(struct net_device* real_dev,
++                                         unsigned short VID) {
 + 
-+    struct vlan_group* grp = vlan_find_group(real_mac_addr);
++         struct vlan_group* grp = vlan_find_group(real_dev->ifindex);
 + 
 +    /*  When here, we have found the correct group, if it exists. */
 + 
-+    if (grp) { /* then we found one */
-+       return grp->vlan_devices[VID]; /* return the vlan device */
-+    }//if
++         if (grp) { /* then we found one */
++                 return grp->vlan_devices[VID]; /* return the vlan device */
++         }//if
 +    
-+    return NULL;
++         return NULL;
 + }/* find_802_1Q_vlan_client */
 + 
 + 
@@ -646,77 +611,77 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +  * is TRUE.  This gets around a difficulty with reference counting, and
 +  * the unregister-by-name (below). --Ben
 +  */
-+ int unregister_802_1Q_vlan_dev(const char* mac, unsigned short vlan_id,
++ int unregister_802_1Q_vlan_dev(int real_dev_ifindex, unsigned short vlan_id,
 +                                int do_dev_put) {
-+    struct vlan_group* grp;
-+    struct net_device* dev = NULL;
++         struct vlan_group* grp;
++         struct net_device* dev = NULL;
 + 
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": VID: %i\n", vlan_id);
++         printk(VLAN_DBG __FUNCTION__ ": VID: %i\n", vlan_id);
 + #endif
 +    
-+    /* sanity check */
-+    if ((vlan_id >= 0xFFF) || (vlan_id <= 0)) {
-+       return -EINVAL;
-+    }
++         /* sanity check */
++         if ((vlan_id >= 0xFFF) || (vlan_id <= 0)) {
++                 return -EINVAL;
++         }
 +    
-+    grp = vlan_find_group(mac);
-+    /*  When here, we have found the correct group, if it exists. */
++         grp = vlan_find_group(real_dev_ifindex);
++         /*  When here, we have found the correct group, if it exists. */
 + 
-+    if (grp) {
-+       dev = grp->vlan_devices[vlan_id];
-+       if (dev) {
++         if (grp) {
++                 dev = grp->vlan_devices[vlan_id];
++                 if (dev) {
 + 
-+          /* Remove proc entry */
-+          vlan_proc_rem_dev(dev);
++                         /* Remove proc entry */
++                         vlan_proc_rem_dev(dev);
 +          
-+          /* take it out of our own structures */
-+          grp->vlan_devices[vlan_id] = NULL;
++                         /* take it out of our own structures */
++                         grp->vlan_devices[vlan_id] = NULL;
 + 
-+          /* Take it out of the global list of devices.
-+           *  NOTE:  This deletes dev, don't access it again!!
-+           */
++                         /* Take it out of the global list of devices.
++                          *  NOTE:  This deletes dev, don't access it again!!
++                          */
 + 
-+          if (do_dev_put) {
-+             dev_put(dev);
-+          }
++                         if (do_dev_put) {
++                                 dev_put(dev);
++                         }
 +          
-+          rtnl_lock();
-+          unregister_netdevice(dev);
-+          rtnl_unlock();
++                         rtnl_lock();
++                         unregister_netdevice(dev);
++                         rtnl_unlock();
 +          
-+       }/* if */
-+    }/* if */
-+    return 0;
++                 }/* if */
++         }/* if */
++         return 0;
 + }/* unregister vlan device */
 + 
 + 
 + 
 + int unregister_802_1Q_vlan_device(const char* vlan_IF_name) {
-+    struct net_device* dev = NULL;
++         struct net_device* dev = NULL;
 + 
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": unregister VLAN by name, name -:%s:-\n",
-+             vlan_IF_name);
++         printk(VLAN_DBG __FUNCTION__ ": unregister VLAN by name, name -:%s:-\n",
++                vlan_IF_name);
 + #endif
 +    
-+    dev = dev_get_by_name(vlan_IF_name);
++         dev = dev_get_by_name(vlan_IF_name);
 + 
-+    if (dev && dev->vlan_dev) {
-+       return unregister_802_1Q_vlan_dev(dev->dev_addr,
-+                                         (unsigned short)(dev->vlan_dev->vlan_id),
-+                                         1 /* do dev_put */);
-+    }
-+    else {
++         if (dev && dev->vlan_dev) {
++                 return unregister_802_1Q_vlan_dev(dev->vlan_dev->real_dev->ifindex,
++                                                   (unsigned short)(dev->vlan_dev->vlan_id),
++                                                   1 /* do dev_put */);
++         }
++         else {
 + #ifdef VLAN_DEBUG
-+       printk(VLAN_DBG __FUNCTION__ ": WARNING: Could not find dev\n");
++                 printk(VLAN_DBG __FUNCTION__ ": WARNING: Could not find dev\n");
 + #endif
 +          
-+       if (dev) {
-+          dev_put(dev); /* release it */
-+       }
-+       return -EINVAL;
-+    }
++                 if (dev) {
++                         dev_put(dev); /* release it */
++                 }
++                 return -EINVAL;
++         }
 + }/* unregister vlan device */
 + 
 + 
@@ -734,207 +699,204 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.c li
 +  */
 + struct net_device *register_802_1Q_vlan_device(const char* eth_IF_name,
 +                                                unsigned short VLAN_ID) {
-+    struct vlan_group* grp;
-+    struct net_device *new_dev;
-+    struct net_device *real_dev; /* the ethernet device */
-+    char* mac;
-+    int malloc_size = 0;
++         struct vlan_group* grp;
++         struct net_device *new_dev;
++         struct net_device *real_dev; /* the ethernet device */
++         int malloc_size = 0;
 +    
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": if_name -:%s:-  vid: %i\n",
-+           eth_IF_name, VLAN_ID);
++         printk(VLAN_DBG __FUNCTION__ ": if_name -:%s:-  vid: %i\n",
++                eth_IF_name, VLAN_ID);
 + #endif
 +    
-+    /* find the device relating to eth_IF_name.
++         /* find the device relating to eth_IF_name.
 +     * TODO:  Make sure it's an ethernet device. */
-+    real_dev = dev_get_by_name(eth_IF_name);
++         real_dev = dev_get_by_name(eth_IF_name);
 + 
-+    if (real_dev != NULL) {
-+       /* printk(KERN_ALERT "Found real_dev"); */
++         if (real_dev != NULL) {
++                 /* printk(KERN_ALERT "Found real_dev"); */
 +             
-+       if ((VLAN_ID > 0) && (VLAN_ID < 0xFFF)) {
++                 if ((VLAN_ID > 0) && (VLAN_ID < 0xFFF)) {
 + 
-+          /* printk(KERN_ALERT "VID is in range"); */
++                         /* printk(KERN_ALERT "VID is in range"); */
 + 
-+          mac = real_dev->dev_addr;
++                         if (find_802_1Q_vlan_dev(real_dev, VLAN_ID)) {
++                                 /* was already registered. */
++                                 printk(VLAN_DBG __FUNCTION__ ": ALREADY had VLAN registered\n");
++                                 dev_put(real_dev);
++                                 return NULL;
++                         }
 + 
-+          if (find_802_1Q_vlan_dev(mac, VLAN_ID)) {
-+             /* was already registered. */
-+             printk(VLAN_DBG __FUNCTION__ ": ALREADY had VLAN registered\n");
-+             dev_put(real_dev);
-+             return NULL;
-+          }
++                         malloc_size = (sizeof(struct net_device));
 + 
-+          malloc_size = (sizeof(struct net_device));
-+ 
-+          new_dev = (struct net_device*) kmalloc(malloc_size, GFP_KERNEL);
-+          VLAN_MEM_DBG("net_device malloc, addr: %p  size: %i\n", new_dev, malloc_size);
++                         new_dev = (struct net_device*) kmalloc(malloc_size, GFP_KERNEL);
++                         VLAN_MEM_DBG("net_device malloc, addr: %p  size: %i\n", new_dev, malloc_size);
 +          
-+          if (new_dev != NULL) {
-+             /* printk(KERN_ALERT "Got a new device.."); */
++                         if (new_dev != NULL) {
++                                 /* printk(KERN_ALERT "Got a new device.."); */
 +             
-+             memset(new_dev, 0, malloc_size); /* zero everything out */
++                                 memset(new_dev, 0, malloc_size); /* zero everything out */
 + 
-+             /* set us up to not use a Qdisc, as the underlying Hardware device
-+              * can do all the queueing we could want.
-+              */
-+             new_dev->qdisc_sleeping = &noqueue_qdisc;
++                                 /* set us up to not use a Qdisc, as the underlying Hardware device
++                                  * can do all the queueing we could want.
++                                  */
++                                 new_dev->qdisc_sleeping = &noqueue_qdisc;
 + 
-+             /* TODO: Understand the implications of 'new_style'. */
-+             new_dev->new_style = 0;
++                                 /* TODO: Understand the implications of 'new_style'. */
++                                 new_dev->new_style = 0;
 +             
-+             /* Gotta set up the fields for the device. */
++                                 /* Gotta set up the fields for the device. */
 +             
-+             if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID) {
-+                /* name will look like:  eth1.0005 */
-+                sprintf(new_dev->name, "%s.%.4i", real_dev->name, VLAN_ID);
-+             }
-+             else if (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID_NO_PAD) {
-+                /* Put our vlan.VID in the name.  Name will look like:  vlan5 */
-+                sprintf(new_dev->name, "vlan%i", VLAN_ID);
-+             }
-+             else if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD) {
-+                /* Put our vlan.VID in the name.  Name will look like:  eth0.5 */
-+                sprintf(new_dev->name, "%s.%i", real_dev->name, VLAN_ID);
-+             }
-+             else { /* (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID) { */
-+                /* Put our vlan.VID in the name.  Name will look like:  vlan0005 */
-+                /* default case */
-+                sprintf(new_dev->name, "vlan%.4i", VLAN_ID);
-+             }
++                                 if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID) {
++                                         /* name will look like:  eth1.0005 */
++                                         sprintf(new_dev->name, "%s.%.4i", real_dev->name, VLAN_ID);
++                                 }
++                                 else if (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID_NO_PAD) {
++                                         /* Put our vlan.VID in the name.  Name will look like:  vlan5 */
++                                         sprintf(new_dev->name, "vlan%i", VLAN_ID);
++                                 }
++                                 else if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD) {
++                                         /* Put our vlan.VID in the name.  Name will look like:  eth0.5 */
++                                         sprintf(new_dev->name, "%s.%i", real_dev->name, VLAN_ID);
++                                 }
++                                 else { /* (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID) { */
++                                         /* Put our vlan.VID in the name.  Name will look like:  vlan0005 */
++                                         /* default case */
++                                         sprintf(new_dev->name, "vlan%.4i", VLAN_ID);
++                                 }
 +                     
 + #ifdef VLAN_DEBUG
-+             printk(VLAN_DBG "Allocated new name -:%s:-\n", new_dev->name);
++                                 printk(VLAN_DBG "Allocated new name -:%s:-\n", new_dev->name);
 + #endif
-+             /* set up method calls */
-+             new_dev->init = vlan_dev_init;
-+             new_dev->destructor = vlan_dev_destruct;
++                                 /* set up method calls */
++                                 new_dev->init = vlan_dev_init;
++                                 new_dev->destructor = vlan_dev_destruct;
 +             
-+             /* new_dev->ifindex = 0;  it will be set when added to
-+              * the global list.
-+              * iflink is set as well. */
++                                 /* new_dev->ifindex = 0;  it will be set when added to
++                                  * the global list.
++                                  * iflink is set as well. */
 +             
-+             new_dev->get_stats = vlan_dev_get_stats;
++                                 new_dev->get_stats = vlan_dev_get_stats;
 +             
-+             /* IFF_BROADCAST|IFF_MULTICAST; ??? */
-+             new_dev->flags = real_dev->flags;
-+             new_dev->flags &= ~IFF_UP;
++                                 /* IFF_BROADCAST|IFF_MULTICAST; ??? */
++                                 new_dev->flags = real_dev->flags;
++                                 new_dev->flags &= ~IFF_UP;
 +             
-+             /* need 4 bytes for extra VLAN header info, hope
-+              * underlying device can handle it. */
-+             new_dev->mtu = real_dev->mtu;
++                                 /* need 4 bytes for extra VLAN header info, hope
++                                  * underlying device can handle it. */
++                                 new_dev->mtu = real_dev->mtu;
 +             
-+             new_dev->type = real_dev->type; /* TODO: is this true? */
++                                 new_dev->type = real_dev->type; /* TODO: is this true? */
 + 
-+             /* Regular ethernet + 4 bytes (18 total). */
-+             new_dev->hard_header_len = VLAN_ETH_HLEN;
++                                 /* Regular ethernet + 4 bytes (18 total). */
++                                 new_dev->hard_header_len = VLAN_ETH_HLEN;
 + 
-+             new_dev->priv = kmalloc(sizeof(struct net_device_stats),
-+                                     GFP_KERNEL);
-+             VLAN_MEM_DBG("new_dev->priv malloc, addr: %p  size: %i\n", new_dev->priv,
-+                          sizeof(struct net_device_stats));
++                                 new_dev->priv = kmalloc(sizeof(struct net_device_stats),
++                                                         GFP_KERNEL);
++                                 VLAN_MEM_DBG("new_dev->priv malloc, addr: %p  size: %i\n", new_dev->priv,
++                                              sizeof(struct net_device_stats));
 +             
-+             if (new_dev->priv) {
-+                memset(new_dev->priv, 0, sizeof(struct net_device_stats));
-+             }//if
++                                 if (new_dev->priv) {
++                                         memset(new_dev->priv, 0, sizeof(struct net_device_stats));
++                                 }//if
 + 
-+             memcpy(new_dev->broadcast, real_dev->broadcast, real_dev->addr_len);
-+             memcpy(new_dev->dev_addr, real_dev->dev_addr, real_dev->addr_len);
-+             new_dev->addr_len = real_dev->addr_len;
++                                 memcpy(new_dev->broadcast, real_dev->broadcast, real_dev->addr_len);
++                                 memcpy(new_dev->dev_addr, real_dev->dev_addr, real_dev->addr_len);
++                                 new_dev->addr_len = real_dev->addr_len;
 + 
-+             new_dev->open = vlan_dev_open;
-+             new_dev->stop = vlan_dev_stop;
-+             new_dev->hard_header = vlan_dev_hard_header;
-+             /*new_dev->hard_header_cache = vlan_header_cache;*/
-+             /*new_dev->header_cache_update = vlan_header_cache_update;*/
-+             new_dev->hard_start_xmit = vlan_dev_hard_start_xmit;
-+             new_dev->rebuild_header = vlan_dev_rebuild_header;
-+             new_dev->hard_header_parse = eth_header_parse; /* trivial. */
-+             new_dev->set_mac_address = vlan_dev_set_mac_address;
-+ 	    new_dev->set_multicast_list = vlan_dev_set_multicast_list;
++                                 new_dev->open = vlan_dev_open;
++                                 new_dev->stop = vlan_dev_stop;
++                                 new_dev->hard_header = vlan_dev_hard_header;
++                                 /*new_dev->hard_header_cache = vlan_header_cache;*/
++                                 /*new_dev->header_cache_update = vlan_header_cache_update;*/
++                                 new_dev->hard_start_xmit = vlan_dev_hard_start_xmit;
++                                 new_dev->rebuild_header = vlan_dev_rebuild_header;
++                                 new_dev->hard_header_parse = eth_header_parse; /* trivial. */
++                                 new_dev->set_mac_address = vlan_dev_set_mac_address;
++                                 new_dev->set_multicast_list = vlan_dev_set_multicast_list;
 + 
-+             new_dev->vlan_dev = (struct vlan_dev_info*) kmalloc(sizeof(struct vlan_dev_info),
-+                                                                        GFP_KERNEL);
-+             VLAN_MEM_DBG("new_dev->vlan_dev malloc, addr: %p  size: %i\n", new_dev->vlan_dev,
-+                          sizeof(struct vlan_dev_info));
-+             if (new_dev->vlan_dev == NULL) {
-+                kfree(new_dev->priv);
-+                VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
-+                kfree(new_dev);
-+                VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
-+                dev_put(real_dev);
-+                return NULL;
-+             }
-+             else {
-+                memset(new_dev->vlan_dev, 0, sizeof(struct vlan_dev_info));
-+                new_dev->vlan_dev->vlan_id = VLAN_ID; /* 1 through 0xFFF */
++                                 new_dev->vlan_dev = (struct vlan_dev_info*) kmalloc(sizeof(struct vlan_dev_info),
++                                                                                     GFP_KERNEL);
++                                 VLAN_MEM_DBG("new_dev->vlan_dev malloc, addr: %p  size: %i\n", new_dev->vlan_dev,
++                                              sizeof(struct vlan_dev_info));
++                                 if (new_dev->vlan_dev == NULL) {
++                                         kfree(new_dev->priv);
++                                         VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
++                                         kfree(new_dev);
++                                         VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
++                                         dev_put(real_dev);
++                                         return NULL;
++                                 }
++                                 else {
++                                         memset(new_dev->vlan_dev, 0, sizeof(struct vlan_dev_info));
++                                         new_dev->vlan_dev->vlan_id = VLAN_ID; /* 1 through 0xFFF */
 + 
-+                /* TODO: have to be careful deleting real devices now. */
-+                new_dev->vlan_dev->real_dev = real_dev;
++                                         /* TODO: have to be careful deleting real devices now. */
++                                         new_dev->vlan_dev->real_dev = real_dev;
 + 
-+                new_dev->vlan_dev->dent = NULL;
-+             }
++                                         new_dev->vlan_dev->dent = NULL;
++                                 }
 +             
-+             /* So, got the sucker initialized, now lets place it into our local
-+              * structure.
-+              */
++                                 /* So, got the sucker initialized, now lets place it into our local
++                                  * structure.
++                                  */
 + 
-+             grp = vlan_find_group(real_dev->dev_addr);
++                                 grp = vlan_find_group(real_dev->ifindex);
 + 
-+             /*  When here, we have found the correct group, if it exists. */
++                                 /*  When here, we have found the correct group, if it exists. */
 + 
-+             if (!grp) { /* need to add a new group */
-+                /* printk(VLAN_DBG "VLAN REGISTER: "
-+                   "Need to add new vlan group.\n");*/
++                                 if (!grp) { /* need to add a new group */
++                                         /* printk(VLAN_DBG "VLAN REGISTER: "
++                                            "Need to add new vlan group.\n");*/
 + 
-+                grp = kmalloc(sizeof(struct vlan_group), GFP_KERNEL);
-+                VLAN_MEM_DBG("grp malloc, addr: %p  size: %i\n", grp, sizeof(struct vlan_group));
++                                         grp = kmalloc(sizeof(struct vlan_group), GFP_KERNEL);
++                                         VLAN_MEM_DBG("grp malloc, addr: %p  size: %i\n", grp, sizeof(struct vlan_group));
 + 
-+                if (grp) {
-+                   printk(KERN_ALERT "VLAN REGISTER:  Allocated new group.\n");
-+                   memset(grp, 0, sizeof(struct vlan_group));
-+                   memcpy(grp->real_mac, real_dev->dev_addr, ETH_ALEN);
-+                   grp->next = p802_1Q_vlan_list;
-+                   p802_1Q_vlan_list = grp;
-+                }
-+                else {
-+                   kfree(new_dev->priv);
-+                   VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
-+                   kfree(new_dev);
-+                   VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
-+                   dev_put(real_dev);
-+                   return NULL;
-+                }
-+             }/* if */
++                                         if (grp) {
++                                                 printk(KERN_ALERT "VLAN REGISTER:  Allocated new group.\n");
++                                                 memset(grp, 0, sizeof(struct vlan_group));
++                                                 grp->real_dev_ifindex = real_dev->ifindex;
++                                                 grp->next = p802_1Q_vlan_list;
++                                                 p802_1Q_vlan_list = grp;
++                                         }
++                                         else {
++                                                 kfree(new_dev->priv);
++                                                 VLAN_FMEM_DBG("new_dev->priv free, addr: %p\n", new_dev->priv);
++                                                 kfree(new_dev);
++                                                 VLAN_FMEM_DBG("new_dev free, addr: %p\n", new_dev);
++                                                 dev_put(real_dev);
++                                                 return NULL;
++                                         }
++                                 }/* if */
 +             
-+             grp->vlan_devices[VLAN_ID] = new_dev;
++                                 grp->vlan_devices[VLAN_ID] = new_dev;
 + 
-+             /*  Now, add it to the global list of devices. */
-+             /* printk(KERN_ALERT "Registering new device."); */
++                                 /*  Now, add it to the global list of devices. */
++                                 /* printk(KERN_ALERT "Registering new device."); */
 + 
-+             /* TODO: Please check this: RTNL   --Ben */
-+             rtnl_lock();
-+             register_netdevice(new_dev);
-+             rtnl_unlock();
++                                 /* TODO: Please check this: RTNL   --Ben */
++                                 rtnl_lock();
++                                 register_netdevice(new_dev);
++                                 rtnl_unlock();
 +             
-+             vlan_proc_add_dev(new_dev); /* create it's proc entry */
++                                 vlan_proc_add_dev(new_dev); /* create it's proc entry */
 + 
-+             /* NOTE:  We have a reference to the real device, so hold on to the reference.
-+              */
-+             /* dev_put(real_dev); */
-+             return new_dev;
-+          }
-+       }//if
-+       /* If we are here, then something is wrong, so release the real_dev
++                                 /* NOTE:  We have a reference to the real device, so hold on to the reference.
++                                  */
++                                 /* dev_put(real_dev); */
++                                 return new_dev;
++                         }
++                 }//if
++                 /* If we are here, then something is wrong, so release the real_dev
 +        */
-+       dev_put(real_dev);
-+    }//if we found real_dev
++                 dev_put(real_dev);
++         }//if we found real_dev
 + 
-+    return NULL;
++         return NULL;
 + }/* register (create) VLAN device */
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h linux.dev/net/802_1Q/vlan.h
 *** linux/net/802_1Q/vlan.h	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan.h	Wed Oct 11 21:37:27 2000
+--- linux.dev/net/802_1Q/vlan.h	Thu Oct 26 00:27:52 2000
 ***************
 *** 0 ****
 --- 1,44 ----
@@ -950,7 +912,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h li
 + 
 + #define VLAN_ERR KERN_ERR
 + #define VLAN_INF KERN_ALERT
-+ #define VLAN_DBG KERN_DEBUG /* change these... to debug, having a hard time
++ #define VLAN_DBG KERN_ALERT /* change these... to debug, having a hard time
 +                              * changing the log level at run-time..for some reason.
 +                              */
 + 
@@ -969,8 +931,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h li
 + #define VLAN_FMEM_DBG(x, y)
 + 
 + 
-+ extern unsigned char vlan_configured_multiple_groups; /* boolean */
 + extern unsigned short vlan_name_type;
++ extern unsigned long vlan_bad_proto_recvd; /* Counter for how many NON-VLAN protos we've received on a VLAN. */
 + 
 + 
 + /* Add some headers for the public VLAN methods. */
@@ -984,11 +946,11 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan.h li
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.c linux.dev/net/802_1Q/vlan_dev.c
 *** linux/net/802_1Q/vlan_dev.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlan_dev.c	Wed Oct 11 20:34:07 2000
+--- linux.dev/net/802_1Q/vlan_dev.c	Thu Oct 26 00:24:15 2000
 ***************
 *** 0 ****
---- 1,779 ----
-+ /*
+--- 1,781 ----
++ /* -*- linux-c -*-
 +  * INET		An implementation of the TCP/IP protocol suite for the LINUX
 +  *		operating system.  INET is implemented using the  BSD Socket
 +  *		interface as the means of communication with the user level.
@@ -1025,7 +987,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 + 
 + 
 + struct net_device_stats* vlan_dev_get_stats(struct net_device* dev) {
-+    return (struct net_device_stats*)(dev->priv);
++         return (struct net_device_stats*)(dev->priv);
 + }
 + 
 + 
@@ -1041,27 +1003,27 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +  */
 + int vlan_dev_rebuild_header(struct sk_buff *skb) {
 + 
-+    struct net_device *dev = skb->dev;
-+    struct vlan_ethhdr *veth = (struct vlan_ethhdr*)(skb->data);
++         struct net_device *dev = skb->dev;
++         struct vlan_ethhdr *veth = (struct vlan_ethhdr*)(skb->data);
 + 
-+    switch (veth->h_vlan_encapsulated_proto)
-+       {
++         switch (veth->h_vlan_encapsulated_proto)
++         {
 + #ifdef CONFIG_INET
-+       case __constant_htons(ETH_P_IP):
++         case __constant_htons(ETH_P_IP):
 + 
-+          /* TODO:  Confirm this will work with VLAN headers... */
-+          return arp_find(veth->h_dest, skb);
++                 /* TODO:  Confirm this will work with VLAN headers... */
++                 return arp_find(veth->h_dest, skb);
 + #endif	
-+       default:
-+          printk(VLAN_DBG
-+                 "%s: unable to resolve type %X addresses.\n", 
-+                 dev->name, (int)veth->h_vlan_encapsulated_proto);
++         default:
++                 printk(VLAN_DBG
++                        "%s: unable to resolve type %X addresses.\n", 
++                        dev->name, (int)veth->h_vlan_encapsulated_proto);
 +          
-+          memcpy(veth->h_source, dev->dev_addr, ETH_ALEN);
-+          break;
-+       }/* switch */
++                 memcpy(veth->h_source, dev->dev_addr, ETH_ALEN);
++                 break;
++         }/* switch */
 + 
-+    return 0;
++         return 0;
 + }/* vlan_dev_rebuild_header */
 + 
 + 
@@ -1083,191 +1045,168 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +  */
 + int vlan_dev_type_trans(struct sk_buff *skb, struct net_device *dev,
 +                         struct packet_type* ptype) {
-+    unsigned char* rawp = NULL;
-+    struct vlan_ethhdr *veth = (struct vlan_ethhdr*)(skb->mac.ethernet);
-+    unsigned short amt_to_pull = 0;
-+    unsigned short vid = 0;
-+    unsigned char is_1q_skb = 1;
-+    struct net_device_stats* stats;
++         unsigned char* rawp = NULL;
++         struct vlan_ethhdr *veth = (struct vlan_ethhdr*)(skb->mac.ethernet);
++         unsigned short vid = 0;
++         struct net_device_stats* stats;
 +    
-+    /* Do we have a VLAN packet?  If not, then it was sent to use because
-+     * the port had a default vlan ID.
-+     */
-+    if (veth->h_vlan_proto != __constant_htons(ETH_P_802_1Q)) {
-+       amt_to_pull = ETH_HLEN;
-+       vid = dev->default_vid;
-+       is_1q_skb = 0; /* FALSE */
-+    }
-+    else {
-+       amt_to_pull = VLAN_ETH_HLEN;
-+       vid = ((unsigned short)(ntohs(veth->h_vlan_TCI)) & 0xFFF);
-+    }
++         /* Do we have a VLAN packet?  If not, then throw it away, after printing an error.
++          */
++         if (veth->h_vlan_proto != __constant_htons(ETH_P_802_1Q)) {
++                 printk(VLAN_INF __FUNCTION__ ": VLAN device received NON-VLAN protocol: %hx\n", htons(veth->h_vlan_proto));
++                 vlan_bad_proto_recvd++;
++                 kfree_skb(skb);
++                 return -EINVAL;
++         }
++         else {
++                 vid = ((unsigned short)(ntohs(veth->h_vlan_TCI)) & 0xFFF);
++         }
 + 
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": skb: %p is_1Q_Protocol: %i vlan_id: %hx\n",
-+           skb, is_1q_skb, vid);
++         printk(VLAN_DBG __FUNCTION__ ": skb: %p vlan_id: %hx\n",
++                skb, vid);
 + #endif
 +    
-+    /*  Ok, we will find the correct VLAN device, strip the header,
-+        and then go on as usual.
-+    */
++         /*  Ok, we will find the correct VLAN device, strip the header,
++             and then go on as usual.
++         */
 +    
-+    /* we have 12 bits of vlan ID. */
-+    /* If it's NULL, we will tag it to be junked below */
-+    skb->dev = find_802_1Q_vlan_dev(dev->dev_addr, vid);
++         /* we have 12 bits of vlan ID. */
++         /* If it's NULL, we will tag it to be junked below */
++         skb->dev = find_802_1Q_vlan_dev(dev, vid);
 + 
-+    if (!skb->dev) {
++         if (!skb->dev) {
 + #ifdef VLAN_DEBUG
-+       printk(VLAN_DBG __FUNCTION__ ": ERROR:  No net_device for VID: %i\n",
-+              (unsigned int)(vid));
++                 printk(VLAN_DBG __FUNCTION__ ": ERROR:  No net_device for VID: %i on dev: %s [%i]\n",
++                        (unsigned int)(vid), dev->name, dev->ifindex);
 + #endif
-+       kfree_skb(skb);
-+       return -1;
-+    }
++                 kfree_skb(skb);
++                 return -1;
++         }
 + 
-+    /* Bump the rx counters for the VLAN device. */
-+    stats = (struct net_device_stats*)(skb->dev->priv);
++         /* Bump the rx counters for the VLAN device. */
++         stats = (struct net_device_stats*)(skb->dev->priv);
 + 
-+    /**  Ok, lets check to make sure the device (dev) we
-+     * came in on is what this VLAN is attached to.
-+     */
-+    if (dev != skb->dev->vlan_dev->real_dev) {
++         /**  Ok, lets check to make sure the device (dev) we
++          * came in on is what this VLAN is attached to.
++          */
++         if (dev != skb->dev->vlan_dev->real_dev) {
 + #ifdef VLAN_DEBUG
-+       printk(VLAN_DBG __FUNCTION__ ": dropping skb: %p because came in on wrong device.\n", skb);
++                 printk(VLAN_DBG __FUNCTION__ ": dropping skb: %p because came in on wrong device, dev: %s  real_dev: %s, skb_dev: %s\n", skb, dev->name, skb->dev->vlan_dev->real_dev->name, skb->dev->name);
 + #endif
-+       kfree_skb(skb);
-+       stats->rx_errors++;
-+       return -1;
-+    }
++                 kfree_skb(skb);
++                 stats->rx_errors++;
++                 return -1;
++         }
 +    
-+    /*
-+     * Deal with ingress priority mapping.
-+     */
-+    if (is_1q_skb) {
-+       skb->priority = skb->dev->vlan_dev->ingress_priority_map[(ntohs(veth->h_vlan_TCI) >> 13) & 0x7];
-+    }
-+    else {
-+       skb->priority = dev->default_priority;
-+    }
++         /*
++          * Deal with ingress priority mapping.
++          */
++         skb->priority = skb->dev->vlan_dev->ingress_priority_map[(ntohs(veth->h_vlan_TCI) >> 13) & 0x7];
 +          
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": priority: %lu  for TCI: %hu (hbo)\n",
-+           (unsigned long)(skb->priority), ntohs(veth->h_vlan_TCI));
++         printk(VLAN_DBG __FUNCTION__ ": priority: %lu  for TCI: %hu (hbo)\n",
++                (unsigned long)(skb->priority), ntohs(veth->h_vlan_TCI));
 + #endif
 +    
-+    stats->rx_packets++;
-+    stats->rx_bytes += skb->len;
++         stats->rx_packets++;
++         stats->rx_bytes += skb->len;
 +       
-+    /* The underlying device SHOULD NOT PULL THE MAC BYTES OFF.
-+       (it doesn't seem to.)
-+     */
-+    skb_pull(skb, amt_to_pull); /* take off the VLAN header */
++         /* The underlying device SHOULD NOT PULL THE MAC BYTES OFF.
++            (it doesn't seem to.)
++         */
++         skb_pull(skb, VLAN_ETH_HLEN); /* take off the VLAN header */
 +    
 +    
-+    /*  VLAN and regular Ethernet headers have the addresses in the same place.
-+     *  TODO:  Add code to deal with VLAN control packets?? --BLG
-+     *         Is there such a thing??
-+     */
-+    if (*(veth->h_dest) & 1) {
-+       stats->multicast++;
-+       if (memcmp(veth->h_dest, dev->broadcast, ETH_ALEN) == 0)
-+          skb->pkt_type = PACKET_BROADCAST;
-+       else
-+          skb->pkt_type = PACKET_MULTICAST;
-+    }
++         /*  VLAN and regular Ethernet headers have the addresses in the same place.
++          *  TODO:  Add code to deal with VLAN control packets?? --BLG
++          *         Is there such a thing??
++          */
++         if (*(veth->h_dest) & 1) {
++                 stats->multicast++;
++                 if (memcmp(veth->h_dest, dev->broadcast, ETH_ALEN) == 0)
++                         skb->pkt_type = PACKET_BROADCAST;
++                 else
++                         skb->pkt_type = PACKET_MULTICAST;
++         }
 + 	
-+    /*
-+     *	This ALLMULTI check should be redundant by 1.4
-+     *	so don't forget to remove it.
-+     *
-+     *	Seems, you forgot to remove it. All silly devices
-+     *	seems to set IFF_PROMISC.
-+     */
++         /*
++          *	This ALLMULTI check should be redundant by 1.4
++          *	so don't forget to remove it.
++          *
++          *	Seems, you forgot to remove it. All silly devices
++          *	seems to set IFF_PROMISC.
++          */
 +    
-+    else if (dev->flags & (IFF_PROMISC/*|IFF_ALLMULTI*/)) {
-+       if (memcmp(veth->h_dest, dev->dev_addr, ETH_ALEN) != 0)
-+          skb->pkt_type = PACKET_OTHERHOST;
-+    }
++         else if (dev->flags & (IFF_PROMISC/*|IFF_ALLMULTI*/)) {
++                 if (memcmp(veth->h_dest, dev->dev_addr, ETH_ALEN) != 0)
++                         skb->pkt_type = PACKET_OTHERHOST;
++         }
 + 
-+    if (!is_1q_skb) {
-+       /*  NOT a VLAN packet, which is still a valid receipt to a VLAN
-+        * device, it will just use the default VID, assigned above.
-+        */
-+       if (ntohs(veth->h_vlan_proto) >= 1536) {
++         /*  Was a VLAN packet, grab the encapsulated protocol, which the layer
++          * three protocols care about.
++          */
++         if (ntohs(veth->h_vlan_encapsulated_proto) >= 1536) {
++                 
++                 skb->protocol = veth->h_vlan_encapsulated_proto;
++                 /* place it back on the queue to be handled by true layer 3 protocols.
++                  */
++                 
++                 /* See if we are configured to re-write the VLAN header to make it look like
++                  * ethernet...
++                  */
++                 if (skb->dev->vlan_dev->flags & 1) {
++                                 /* Lifted from Gleb's VLAN code... */
++                         memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++                         skb->mac.raw += 4;
++                 }
++                 netif_rx(skb);
++                 return 0;
++         }
 + 
-+          skb->protocol = veth->h_vlan_proto;
-+          /* place it back on the queue to be handled by true layer 3 protocols.
-+           */
-+          netif_rx(skb);
-+          return 0;
-+       }
-+    }
-+    else {
-+       /*  Was a VLAN packet, grab the encapsulated protocol, which the layer
-+        * three protocols care about.
-+        */
-+       if (ntohs(veth->h_vlan_encapsulated_proto) >= 1536) {
-+ 
-+          skb->protocol = veth->h_vlan_encapsulated_proto;
-+          /* place it back on the queue to be handled by true layer 3 protocols.
-+           */
-+ 
-+          /* See if we are configured to re-write the VLAN header to make it look like
-+           * ethernet...
-+           */
-+          if (skb->dev->vlan_dev->flags & 1) {
-+             /* Lifted from Gleb's VLAN code... */
-+             memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
-+             skb->mac.raw += 4;
-+          }
-+          netif_rx(skb);
-+          return 0;
-+       }
-+    }
-+ 
-+    rawp = skb->data;
++         rawp = skb->data;
 + 	
-+    /*
-+     *	This is a magic hack to spot IPX packets. Older Novell breaks
-+     *	the protocol design and runs IPX over 802.3 without an 802.2 LLC
-+     *	layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
-+     *	won't work for fault tolerant netware but does for the rest.
-+     */
-+    if (*(unsigned short *)rawp == 0xFFFF) {
-+       skb->protocol = __constant_htons(ETH_P_802_3);
-+       /* place it back on the queue to be handled by true layer 3 protocols.
-+        */
++         /*
++          *	This is a magic hack to spot IPX packets. Older Novell breaks
++          *	the protocol design and runs IPX over 802.3 without an 802.2 LLC
++          *	layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
++          *	won't work for fault tolerant netware but does for the rest.
++          */
++         if (*(unsigned short *)rawp == 0xFFFF) {
++                 skb->protocol = __constant_htons(ETH_P_802_3);
++                 /* place it back on the queue to be handled by true layer 3 protocols.
++                  */
 + 
-+       /* See if we are configured to re-write the VLAN header to make it look like
-+        * ethernet...
-+        */
-+       if (is_1q_skb && (skb->dev->vlan_dev->flags & 1)) {
-+          /* Lifted from Gleb's VLAN code... */
-+          memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
-+          skb->mac.raw += 4;
-+       }
++                 /* See if we are configured to re-write the VLAN header to make it look like
++                  * ethernet...
++                  */
++                 if (skb->dev->vlan_dev->flags & 1) {
++                         /* Lifted from Gleb's VLAN code... */
++                         memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++                         skb->mac.raw += 4;
++                 }
 +       
-+       netif_rx(skb);
-+       return 0;
-+    }
++                 netif_rx(skb);
++                 return 0;
++         }
 + 		
-+    /*
-+     *	Real 802.2 LLC
-+     */
-+    skb->protocol = __constant_htons(ETH_P_802_2);
-+    /* place it back on the queue to be handled by upper layer protocols.
-+     */
++         /*
++          *	Real 802.2 LLC
++          */
++         skb->protocol = __constant_htons(ETH_P_802_2);
++         /* place it back on the queue to be handled by upper layer protocols.
++          */
 + 
-+    /* See if we are configured to re-write the VLAN header to make it look like
-+     * ethernet...
-+     */
-+    if (is_1q_skb && (skb->dev->vlan_dev->flags & 1)) {
-+       /* Lifted from Gleb's VLAN code... */
-+       memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
-+       skb->mac.raw += 4;
-+    }
-+    netif_rx(skb);
-+    return 0;
++         /* See if we are configured to re-write the VLAN header to make it look like
++          * ethernet...
++          */
++         if (skb->dev->vlan_dev->flags & 1) {
++                 /* Lifted from Gleb's VLAN code... */
++                 memmove(skb->data - (VLAN_ETH_HLEN - 4), skb->data - VLAN_ETH_HLEN, 12);
++                 skb->mac.raw += 4;
++         }
++         netif_rx(skb);
++         return 0;
 + }
 + 
 + 
@@ -1283,144 +1222,198 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 + int vlan_dev_hard_header(struct sk_buff *skb, struct net_device *dev,
 +                          unsigned short type, void *daddr, void *saddr,
 +                          unsigned len) {
-+    struct vlan_ethhdr *veth;
-+    unsigned short veth_TCI = 0;
++         struct vlan_ethhdr *veth;
++         unsigned short veth_TCI = 0;
 +         
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": skb: %p type: %hx len: %x vlan_id: %hx, daddr: %p\n",
-+           skb, type, len, dev->vlan_dev->vlan_id, daddr);
++         printk(VLAN_DBG __FUNCTION__ ": skb: %p type: %hx len: %x vlan_id: %hx, daddr: %p\n",
++                skb, type, len, dev->vlan_dev->vlan_id, daddr);
 + #endif
 +    
-+    veth = (struct vlan_ethhdr*)skb_push(skb, VLAN_ETH_HLEN);
++         veth = (struct vlan_ethhdr*)skb_push(skb, VLAN_ETH_HLEN);
 + 
-+    /* build the four bytes that make this a VLAN header. */
++         /* build the four bytes that make this a VLAN header. */
 + 
-+    /* first, the ethernet type */
-+    veth->h_vlan_proto = __constant_htons(ETH_P_802_1Q);
++         /* first, the ethernet type */
++         veth->h_vlan_proto = __constant_htons(ETH_P_802_1Q);
 + 
-+    /* Now, construct the second two bytes. This field looks something
-+     * like:
-+     * usr_priority: 3 bits  (high bits)
-+     * CFI           1 bit
-+     * VLAN ID       12 bits (low bits)
-+     *
-+     */
-+    veth_TCI = dev->vlan_dev->vlan_id;
-+    veth_TCI |= vlan_dev_get_egress_qos_mask(dev, skb);
++         /* Now, construct the second two bytes. This field looks something
++          * like:
++          * usr_priority: 3 bits  (high bits)
++          * CFI           1 bit
++          * VLAN ID       12 bits (low bits)
++          *
++          */
++         veth_TCI = dev->vlan_dev->vlan_id;
++         veth_TCI |= vlan_dev_get_egress_qos_mask(dev, skb);
 +    
-+    veth->h_vlan_TCI = htons(veth_TCI);
++         veth->h_vlan_TCI = htons(veth_TCI);
 +            
-+    /* Rest should be the same as a normal header. */
-+    /* 
-+     *  Set the protocol type. For a packet of type ETH_P_802_3 we put the length
-+     *  in here instead. It is up to the 802.2 layer to carry protocol information.
-+     *
-+     */
++         /* Rest should be the same as a normal header. */
++         /* 
++          *  Set the protocol type. For a packet of type ETH_P_802_3 we put the length
++          *  in here instead. It is up to the 802.2 layer to carry protocol information.
++          *
++          */
 + 
-+    if (type != ETH_P_802_3) 
-+       veth->h_vlan_encapsulated_proto = htons(type);
-+    else
-+       veth->h_vlan_encapsulated_proto = htons(len);
++         if (type != ETH_P_802_3) 
++                 veth->h_vlan_encapsulated_proto = htons(type);
++         else
++                 veth->h_vlan_encapsulated_proto = htons(len);
 + 
-+    /*
-+     *	Set the source hardware address. 
-+     */
++         /*
++          *	Set the source hardware address. 
++          */
 +            
-+    if (saddr)
-+       memcpy(veth->h_source, saddr, ETH_ALEN);
-+    else
-+       memcpy(veth->h_source, dev->dev_addr, ETH_ALEN);
++         if (saddr)
++                 memcpy(veth->h_source, saddr, ETH_ALEN);
++         else
++                 memcpy(veth->h_source, dev->dev_addr, ETH_ALEN);
 +    
-+    /*
-+     *	Anyway, the loopback-device should never use this function... 
-+     *   This is especially true with VLAN's. --BLG
-+     */
++         /*
++          *	Anyway, the loopback-device should never use this function... 
++          *   This is especially true with VLAN's. --BLG
++          */
 +    
-+    if (dev->flags & (IFF_LOOPBACK | IFF_NOARP)) {
-+       memset(veth->h_dest, 0, ETH_ALEN);
-+       return (VLAN_ETH_HLEN); /* was: dev->hard_header_len */
-+    }
++         if (dev->flags & (IFF_LOOPBACK | IFF_NOARP)) {
++                 memset(veth->h_dest, 0, ETH_ALEN);
++                 return (VLAN_ETH_HLEN); /* was: dev->hard_header_len */
++         }
 +    
-+    if (daddr) {
-+       memcpy(veth->h_dest, daddr, ETH_ALEN);
-+       return (VLAN_ETH_HLEN); /* was: dev->hard_header_len */
-+    }
++         if (daddr) {
++                 memcpy(veth->h_dest, daddr, ETH_ALEN);
++                 return (VLAN_ETH_HLEN); /* was: dev->hard_header_len */
++         }
 +    
-+    return -(VLAN_ETH_HLEN); /* was: dev->hard_header_len */
++         return -(VLAN_ETH_HLEN); /* was: dev->hard_header_len */
 +    
 + } /* vlan_hard_header, put on the VLAN hardware header */
 + 
 + 
 + int vlan_dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev) {
-+    struct net_device_stats* stats = (struct net_device_stats*)(dev->priv);
++         struct net_device_stats* stats = (struct net_device_stats*)(dev->priv);
++         struct vlan_ethhdr *veth = (struct vlan_ethhdr*)(skb->data);
 + 
-+    skb->dev = dev->vlan_dev->real_dev;
++         /* Handle non-VLAN frames if they are sent to us, for example by DHCP. */
++         if (veth->h_vlan_proto != __constant_htons(ETH_P_802_1Q)) {
++                 /* This is not a VLAN frame...but we can fix that! */
++                 unsigned short veth_TCI = 0;
++                 dev->vlan_dev->cnt_encap_on_xmit++;
 + 
 + #ifdef VLAN_DEBUG
-+    printk(VLAN_DBG __FUNCTION__ ": about to send skb: %p  to dev: %s\n", skb, skb->dev->name);
++                 printk(VLAN_DBG __FUNCTION__ ": proto to encap: 0x%hx (hbo)\n", htons(veth->h_vlan_proto));
 + #endif
 + 
-+    dev_queue_xmit(skb);
-+    stats->tx_packets++; /* for statics only */
-+    stats->tx_bytes += skb->len;
-+    return 0;
++                 if (skb_headroom(skb) < 4) {
++                         struct sk_buff* sk_tmp = skb;
++                         skb = skb_realloc_headroom(sk_tmp, 4);
++                         kfree_skb(sk_tmp);
++                         if (skb == NULL) {
++                                 stats->tx_dropped++;
++                                 kfree_skb(sk_tmp);
++                                 return -ENOMEM;
++                         }
++                         dev->vlan_dev->cnt_inc_headroom_on_tx++;
++                 }
++                 else {
++                         if( !(skb = skb_unshare(skb, GFP_ATOMIC)) ) {
++                                 printk(KERN_ERR "vlan: failed to unshare skbuff\n");
++                                 stats->tx_dropped++;
++                                 return -ENOMEM;
++                         }
++                 }
++                 veth = (struct vlan_ethhdr*)skb_push(skb, 4);
++ 
++                 /* Move the mac addresses to the beginning of the new header. */
++                 memmove(skb->data, skb->data + 4, 12);
++ 
++                 /* first, the ethernet type */
++                 veth->h_vlan_proto = __constant_htons(ETH_P_802_1Q);
++ 
++                 /* Now, construct the second two bytes. This field looks something
++                  * like:
++                  * usr_priority: 3 bits  (high bits)
++                  * CFI           1 bit
++                  * VLAN ID       12 bits (low bits)
++                  *
++                  */
++                 veth_TCI = dev->vlan_dev->vlan_id;
++                 veth_TCI |= vlan_dev_get_egress_qos_mask(dev, skb);
++    
++                 veth->h_vlan_TCI = htons(veth_TCI);
++         }/* If we needed to encapsulate the frame */
++ 
++         skb->dev = dev->vlan_dev->real_dev;
++         
++ #ifdef VLAN_DEBUG
++         printk(VLAN_DBG __FUNCTION__ ": about to send skb: %p to dev: %s\n", skb, skb->dev->name);
++         printk(VLAN_DBG "  %2hx.%2hx.%2hx.%2xh.%2hx.%2hx %2hx.%2hx.%2hx.%2hx.%2hx.%2hx %4hx %4hx %4hx\n",
++                veth->h_dest[0], veth->h_dest[1], veth->h_dest[2], veth->h_dest[3], veth->h_dest[4], veth->h_dest[5],
++                veth->h_source[0], veth->h_source[1], veth->h_source[2], veth->h_source[3], veth->h_source[4], veth->h_source[5],
++                veth->h_vlan_proto, veth->h_vlan_TCI, veth->h_vlan_encapsulated_proto);
++ #endif
++ 
++         dev_queue_xmit(skb);
++         stats->tx_packets++; /* for statics only */
++         stats->tx_bytes += skb->len;
++         return 0;
 + }/* vlan_dev_hard_start_xmit */
 + 
 + 
 + int vlan_dev_change_mtu(struct net_device *dev, int new_mtu) {
-+    /* TODO: gotta make sure the underlying layer can handle it,
-+     * maybe an IFF_VLAN_CAPABLE flag for devices?
-+     */
++         /* TODO: gotta make sure the underlying layer can handle it,
++          * maybe an IFF_VLAN_CAPABLE flag for devices?
++          */
 + 
-+    dev->mtu = new_mtu;
-+    return new_mtu;
++         dev->mtu = new_mtu;
++         return new_mtu;
 + }
 + 
 + int vlan_dev_open(struct net_device* dev) {
-+    if (! dev->vlan_dev->real_dev->flags & IFF_UP) {
-+       return -ENETDOWN;
-+    }
++         if (! dev->vlan_dev->real_dev->flags & IFF_UP) {
++                 return -ENETDOWN;
++         }
 +    
-+    dev->flags |= IFF_UP;
-+    return 0;
++         dev->flags |= IFF_UP;
++         return 0;
 + }
 + 
 + int vlan_dev_stop(struct net_device* dev) {
-+    dev->flags &= ~IFF_UP;
-+    vlan_flush_mc_list(dev);
-+    return 0;
++         dev->flags &= ~IFF_UP;
++         vlan_flush_mc_list(dev);
++         return 0;
 + }
 + 
 + int vlan_dev_init(struct net_device* dev) {
-+    /* TODO:  figure this out, maybe do nothing?? */
-+    return 0;
++         /* TODO:  figure this out, maybe do nothing?? */
++         return 0;
 + }
 + 
 + void vlan_dev_destruct(struct net_device* dev) {
 + 
-+    if (dev) {
-+       if (dev->vlan_dev) {
-+          dev_put(dev->vlan_dev->real_dev); /* release our reference */
++         if (dev) {
++                 if (dev->vlan_dev) {
++                         dev_put(dev->vlan_dev->real_dev); /* release our reference */
 + 
-+          if (dev->vlan_dev->dent) {
-+             printk(KERN_ERR __FUNCTION__ ": dev->vlan_dev->dent is NOT NULL!\n");
-+             /* If we ever get here, there is a serious bug that must be fixed. */
-+          }
-+          kfree(dev->vlan_dev);
-+          VLAN_FMEM_DBG("dev->vlan_dev free, addr: %p\n", dev->vlan_dev);
-+          dev->vlan_dev = NULL;
++                         if (dev->vlan_dev->dent) {
++                                 printk(KERN_ERR __FUNCTION__ ": dev->vlan_dev->dent is NOT NULL!\n");
++                                 /* If we ever get here, there is a serious bug that must be fixed. */
++                         }
++                         kfree(dev->vlan_dev);
++                         VLAN_FMEM_DBG("dev->vlan_dev free, addr: %p\n", dev->vlan_dev);
++                         dev->vlan_dev = NULL;
 + 
-+       }
++                 }
 +       
-+       kfree(dev->priv);
-+       VLAN_FMEM_DBG("dev->priv free, addr: %p\n", dev->priv);
-+       dev->priv = NULL;
++                 kfree(dev->priv);
++                 VLAN_FMEM_DBG("dev->priv free, addr: %p\n", dev->priv);
++                 dev->priv = NULL;
 + 
-+       kfree(dev);
-+       VLAN_FMEM_DBG("net_device free, addr: %p\n", dev);
-+       dev = NULL;
-+    }
-+    return;
++                 kfree(dev);
++                 VLAN_FMEM_DBG("net_device free, addr: %p\n", dev);
++                 dev = NULL;
++         }
++         return;
 + }
 + 
 + 
@@ -1471,19 +1464,19 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 + 
 + void vlan_dev_copy_and_sum(struct sk_buff *dest, unsigned char *src,
 +                            int length, int base) {
-+    struct vlan_ethhdr* veth;
-+    struct iphdr *iph;
-+    int ip_length;
++         struct vlan_ethhdr* veth;
++         struct iphdr *iph;
++         int ip_length;
 +    
-+    veth = (struct vlan_ethhdr*)(src);
++         veth = (struct vlan_ethhdr*)(src);
 +    
-+    /*  This grabs the VLAN part of the header too. */
-+    if (veth->h_vlan_encapsulated_proto != __constant_htons(ETH_P_IP)) {
-+       memcpy(dest->data, src, length);
-+       return;
-+    }
++         /*  This grabs the VLAN part of the header too. */
++         if (veth->h_vlan_encapsulated_proto != __constant_htons(ETH_P_IP)) {
++                 memcpy(dest->data, src, length);
++                 return;
++         }
 +       
-+    /*
++         /*
 +     * We have to watch for padded packets. The csum doesn't include the
 +     * padding, and there is no point in copying the padding anyway.
 +     * We have to use the smaller of length and ip_length because it
@@ -1491,212 +1484,183 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +     */
 +       
 +    /* ethernet is always >= 34 */
-+    memcpy(dest->data, src, sizeof(struct iphdr) + VLAN_ETH_HLEN);
++         memcpy(dest->data, src, sizeof(struct iphdr) + VLAN_ETH_HLEN);
 +       
-+    length -= sizeof(struct iphdr) + VLAN_ETH_HLEN;
-+    iph = (struct iphdr*)(src + VLAN_ETH_HLEN);
-+    ip_length = ntohs(iph->tot_len) - sizeof(struct iphdr);
++         length -= sizeof(struct iphdr) + VLAN_ETH_HLEN;
++         iph = (struct iphdr*)(src + VLAN_ETH_HLEN);
++         ip_length = ntohs(iph->tot_len) - sizeof(struct iphdr);
 +    
 +    /* Also watch out for bogons - min IP size is 8 (rfc-1042) */
-+    if ((ip_length <= length) && (ip_length > 7))
-+       length=ip_length;
++         if ((ip_length <= length) && (ip_length > 7))
++                 length=ip_length;
 +    
-+    dest->csum = csum_partial_copy(src + sizeof(struct iphdr) + VLAN_ETH_HLEN,
-+                                   dest->data + sizeof(struct iphdr) + VLAN_ETH_HLEN,
-+                                   length, base);
-+    dest->ip_summed=1;
++         dest->csum = csum_partial_copy(src + sizeof(struct iphdr) + VLAN_ETH_HLEN,
++                                        dest->data + sizeof(struct iphdr) + VLAN_ETH_HLEN,
++                                        length, base);
++         dest->ip_summed=1;
 + 
 + } /* vlan_copy_and_sum */
 + 
 + #endif //! CONFIG_IP_ROUTER
 + 
 + 
-+ int vlan_dev_set_dflt_vid(char* dev_name, unsigned short vid) {
-+    struct net_device* dev = dev_get_by_name(dev_name);
-+    int retval = -EINVAL;
-+    if (dev) {
-+       if (!dev->vlan_dev) { /* can't put a dflt ID on a vlan device */
-+          if ((vid > 0) && (vid <= 0xFFF)) {
-+             dev->default_vid = (vid & 0xFFF);
-+             retval = 0;
-+          }
-+       }
-+       dev_put(dev);
-+    }
-+    return retval;
-+ }
-+ 
-+ 
-+ int vlan_dev_set_dflt_priority(char* dev_name, unsigned short priority) {
-+    struct net_device* dev = dev_get_by_name(dev_name);
-+    int retval = -EINVAL;
-+    if (dev) {
-+       if (!dev->vlan_dev) { /* can't put a dflt ID on a vlan device */
-+          dev->default_priority = priority;
-+          retval = 0;
-+       }
-+       dev_put(dev);
-+    }
-+    return retval;
-+ }
-+ 
 + 
 + int vlan_dev_set_ingress_priority(char* dev_name, __u32 skb_prio, short vlan_prio) {
-+    struct net_device* dev = dev_get_by_name(dev_name);
++         struct net_device* dev = dev_get_by_name(dev_name);
 +    
-+    if (dev) {
-+       if (dev->vlan_dev) {
-+          /* see if a priority mapping exists.. */
-+          dev->vlan_dev->ingress_priority_map[vlan_prio & 0x7] = skb_prio;
-+          dev_put(dev);
-+          return 0;
-+       }
-+       dev_put(dev);
-+    }
-+    return -EINVAL;
++         if (dev) {
++                 if (dev->vlan_dev) {
++                         /* see if a priority mapping exists.. */
++                         dev->vlan_dev->ingress_priority_map[vlan_prio & 0x7] = skb_prio;
++                         dev_put(dev);
++                         return 0;
++                 }
++                 dev_put(dev);
++         }
++         return -EINVAL;
 + }
 + 
 + int vlan_dev_set_egress_priority(char* dev_name, __u32 skb_prio, short vlan_prio) {
-+    struct net_device* dev = dev_get_by_name(dev_name);
-+    struct vlan_priority_tci_mapping* mp = NULL;
-+    struct vlan_priority_tci_mapping* np;
++         struct net_device* dev = dev_get_by_name(dev_name);
++         struct vlan_priority_tci_mapping* mp = NULL;
++         struct vlan_priority_tci_mapping* np;
 +    
-+    if (dev) {
-+       if (dev->vlan_dev) {
-+          /* see if a priority mapping exists.. */
-+          mp = dev->vlan_dev->egress_priority_map[skb_prio & 0xF];
-+          while (mp) {
-+             if (mp->priority == skb_prio) {
-+                mp->vlan_qos = ((vlan_prio << 13) & 0xE000);
-+                dev_put(dev);
-+                return 0;
-+             }
-+          }
-+          /* create a new mapping then. */
-+          mp = dev->vlan_dev->egress_priority_map[skb_prio & 0xF];
-+          np = kmalloc(sizeof(struct vlan_priority_tci_mapping), GFP_KERNEL);
-+          if (np) {
-+             np->next = mp;
-+             np->priority = skb_prio;
-+             np->vlan_qos = ((vlan_prio << 13) & 0xE000);
-+             dev->vlan_dev->egress_priority_map[skb_prio & 0xF] = np;
-+             dev_put(dev);
-+             return 0;
-+          }
-+          else {
-+             dev_put(dev);
-+             return -ENOBUFS;
-+          }
-+       }
-+       dev_put(dev);
-+    }
-+    return -EINVAL;
++         if (dev) {
++                 if (dev->vlan_dev) {
++                         /* see if a priority mapping exists.. */
++                         mp = dev->vlan_dev->egress_priority_map[skb_prio & 0xF];
++                         while (mp) {
++                                 if (mp->priority == skb_prio) {
++                                         mp->vlan_qos = ((vlan_prio << 13) & 0xE000);
++                                         dev_put(dev);
++                                         return 0;
++                                 }
++                         }
++                         /* create a new mapping then. */
++                         mp = dev->vlan_dev->egress_priority_map[skb_prio & 0xF];
++                         np = kmalloc(sizeof(struct vlan_priority_tci_mapping), GFP_KERNEL);
++                         if (np) {
++                                 np->next = mp;
++                                 np->priority = skb_prio;
++                                 np->vlan_qos = ((vlan_prio << 13) & 0xE000);
++                                 dev->vlan_dev->egress_priority_map[skb_prio & 0xF] = np;
++                                 dev_put(dev);
++                                 return 0;
++                         }
++                         else {
++                                 dev_put(dev);
++                                 return -ENOBUFS;
++                         }
++                 }
++                 dev_put(dev);
++         }
++         return -EINVAL;
 + }
 + 
 + /* Flags are defined in the vlan_dev_info class in include/linux/if_vlan.h file. */
 + int vlan_dev_set_vlan_flag(char* dev_name, __u32 flag, short flag_val) {
-+    struct net_device* dev = dev_get_by_name(dev_name);
++         struct net_device* dev = dev_get_by_name(dev_name);
 +    
-+    if (dev) {
-+       if (dev->vlan_dev) {
-+                   /* verify flag is supported */
-+          if (flag == 1) {
-+             if (flag_val) {
-+                dev->vlan_dev->flags |= 1;
-+             }
-+             else {
-+                dev->vlan_dev->flags &= ~1;
-+             }
-+             dev_put(dev);
-+             return 0;
-+          }
-+          else {
-+             dev_put(dev);
-+             return -EINVAL;
-+          }
-+       }
-+       dev_put(dev);
-+    }
-+    return -EINVAL;
++         if (dev) {
++                 if (dev->vlan_dev) {
++                         /* verify flag is supported */
++                         if (flag == 1) {
++                                 if (flag_val) {
++                                         dev->vlan_dev->flags |= 1;
++                                 }
++                                 else {
++                                         dev->vlan_dev->flags &= ~1;
++                                 }
++                                 dev_put(dev);
++                                 return 0;
++                         }
++                         else {
++                                 dev_put(dev);
++                                 return -EINVAL;
++                         }
++                 }
++                 dev_put(dev);
++         }
++         return -EINVAL;
 + }
 + 
 + 
 + int vlan_dev_set_mac_address(struct net_device *dev, void* addr) {
-+    int i;
-+    printk("%s: Setting MAC address to ", dev->name);
-+    for (i = 0; i < 6; i++)
-+       printk(" %2.2x", dev->dev_addr[i] = ((unsigned char *)addr)[i]);
-+    printk(".\n");
-+    printk("  Make sure the underlying device is in promiscious mode!\n");
++         int i;
++         printk("%s: Setting MAC address to ", dev->name);
++         for (i = 0; i < 6; i++)
++                 printk(" %2.2x", dev->dev_addr[i] = ((unsigned char *)addr)[i]);
++         printk(".\n");
++         printk("  Make sure the underlying device is in promiscious mode!\n");
 + 
-+    /* Copy the address. */
-+    memcpy(dev->dev_addr, addr, 6);
++         /* Copy the address. */
++         memcpy(dev->dev_addr, addr, 6);
 + 
-+    return 0;
++         return 0;
 + }
 + 
 + 
 + /** Taken from Gleb + Lennert's VLAN code, and modified... */
 + void vlan_dev_set_multicast_list(struct net_device *vlan_dev) {
-+    struct dev_mc_list *dmi;
-+    struct net_device *real_dev;
-+    int inc;
++         struct dev_mc_list *dmi;
++         struct net_device *real_dev;
++         int inc;
 + 
-+    if (vlan_dev && vlan_dev->vlan_dev) {
-+       /* Then it's a real vlan device, as far as we can tell.. */
-+       real_dev = vlan_dev->vlan_dev->real_dev;
++         if (vlan_dev && vlan_dev->vlan_dev) {
++                 /* Then it's a real vlan device, as far as we can tell.. */
++                 real_dev = vlan_dev->vlan_dev->real_dev;
 + 
-+       /* compare the current promiscuity to the last promisc we had.. */
-+       inc = vlan_dev->promiscuity - vlan_dev->vlan_dev->old_promiscuity;
++                 /* compare the current promiscuity to the last promisc we had.. */
++                 inc = vlan_dev->promiscuity - vlan_dev->vlan_dev->old_promiscuity;
 +    
-+       if (inc) {
-+          printk(KERN_INFO "vlan: dev_set_promiscuity(master, %d)\n", inc);
-+          dev_set_promiscuity(real_dev, inc); /* found in dev.c */
-+          vlan_dev->vlan_dev->old_promiscuity = vlan_dev->promiscuity;
-+       }
++                 if (inc) {
++                         printk(KERN_INFO "vlan: dev_set_promiscuity(master, %d)\n", inc);
++                         dev_set_promiscuity(real_dev, inc); /* found in dev.c */
++                         vlan_dev->vlan_dev->old_promiscuity = vlan_dev->promiscuity;
++                 }
 +    
-+       inc = vlan_dev->allmulti - vlan_dev->vlan_dev->old_allmulti;
++                 inc = vlan_dev->allmulti - vlan_dev->vlan_dev->old_allmulti;
 +    
-+       if (inc) {
-+          printk(KERN_INFO "vlan: dev_set_allmulti(master, %d)\n", inc);
-+          dev_set_allmulti(real_dev, inc); /* dev.c */
-+          vlan_dev->vlan_dev->old_allmulti = vlan_dev->allmulti;
-+       }
++                 if (inc) {
++                         printk(KERN_INFO "vlan: dev_set_allmulti(master, %d)\n", inc);
++                         dev_set_allmulti(real_dev, inc); /* dev.c */
++                         vlan_dev->vlan_dev->old_allmulti = vlan_dev->allmulti;
++                 }
 +    
-+       /* looking for addresses to add to master's list */
-+       for (dmi = vlan_dev->mc_list; dmi!=NULL; dmi=dmi->next) {
-+          if (vlan_should_add_mc(dmi, vlan_dev->vlan_dev->old_mc_list)) {
-+             dev_mc_add(real_dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
-+             printk(KERN_INFO "vlan: add %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address to master interface\n",
-+                    dmi->dmi_addr[0],
-+                    dmi->dmi_addr[1],
-+                    dmi->dmi_addr[2],
-+                    dmi->dmi_addr[3],
-+                    dmi->dmi_addr[4],
-+                    dmi->dmi_addr[5]);
-+          }
-+       }
++                 /* looking for addresses to add to master's list */
++                 for (dmi = vlan_dev->mc_list; dmi!=NULL; dmi=dmi->next) {
++                         if (vlan_should_add_mc(dmi, vlan_dev->vlan_dev->old_mc_list)) {
++                                 dev_mc_add(real_dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
++                                 printk(KERN_INFO "vlan: add %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address to master interface\n",
++                                        dmi->dmi_addr[0],
++                                        dmi->dmi_addr[1],
++                                        dmi->dmi_addr[2],
++                                        dmi->dmi_addr[3],
++                                        dmi->dmi_addr[4],
++                                        dmi->dmi_addr[5]);
++                         }
++                 }
 +    
-+       /* looking for addresses to delete from master's list */
-+       for (dmi = vlan_dev->mc_list; dmi!=NULL; dmi=dmi->next) {
-+          if (vlan_should_add_mc(dmi, vlan_dev->mc_list)) {
-+             /* if we think we should add it to the new list, then we should really
-+              * delete it from the real list on the underlying device.
-+              */
-+             dev_mc_delete(real_dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
-+             printk(KERN_INFO "vlan: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from master interface\n",
-+                    dmi->dmi_addr[0],
-+                    dmi->dmi_addr[1],
-+                    dmi->dmi_addr[2],
-+                    dmi->dmi_addr[3],
-+                    dmi->dmi_addr[4],
-+                    dmi->dmi_addr[5]);
-+          }
-+       }
++                 /* looking for addresses to delete from master's list */
++                 for (dmi = vlan_dev->mc_list; dmi!=NULL; dmi=dmi->next) {
++                         if (vlan_should_add_mc(dmi, vlan_dev->mc_list)) {
++                                 /* if we think we should add it to the new list, then we should really
++                                  * delete it from the real list on the underlying device.
++                                  */
++                                 dev_mc_delete(real_dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
++                                 printk(KERN_INFO "vlan: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from master interface\n",
++                                        dmi->dmi_addr[0],
++                                        dmi->dmi_addr[1],
++                                        dmi->dmi_addr[2],
++                                        dmi->dmi_addr[3],
++                                        dmi->dmi_addr[4],
++                                        dmi->dmi_addr[5]);
++                         }
++                 }
 +    
-+       /* save multicast list */
-+       vlan_copy_mc_list(vlan_dev->mc_list, vlan_dev->vlan_dev);
-+    }/* if we were sent a valid device */
++                 /* save multicast list */
++                 vlan_copy_mc_list(vlan_dev->mc_list, vlan_dev->vlan_dev);
++         }/* if we were sent a valid device */
 + }/* vlan_dev_set_multicast */
 + 
 + 
@@ -1704,76 +1668,77 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlan_dev.
 +  *  an entire list, and we'll iterate through it.
 +  */
 + int vlan_should_add_mc(struct dev_mc_list *dmi, struct dev_mc_list *mc_list) {
-+    struct dev_mc_list *idmi; /* iterator */
++         struct dev_mc_list *idmi; /* iterator */
 + 
-+    for (idmi=mc_list; idmi!=NULL;) {
-+       if (vlan_dmi_equals(dmi, idmi)) {
-+          if (dmi->dmi_users > idmi->dmi_users)
-+             return 1;
-+          else
-+             return 0;
-+       }
-+       else {
-+          idmi = idmi->next;
-+       }
-+    }
++         for (idmi=mc_list; idmi!=NULL;) {
++                 if (vlan_dmi_equals(dmi, idmi)) {
++                         if (dmi->dmi_users > idmi->dmi_users)
++                                 return 1;
++                         else
++                                 return 0;
++                 }
++                 else {
++                         idmi = idmi->next;
++                 }
++         }
 +    
-+    return 1;
++         return 1;
 + }
 + 
 + 
 + void vlan_copy_mc_list(struct dev_mc_list *mc_list, struct vlan_dev_info *vlan_info) {
-+    struct dev_mc_list *dmi, *new_dmi;
++         struct dev_mc_list *dmi, *new_dmi;
 +    
-+    vlan_destroy_mc_list(vlan_info->old_mc_list);
-+    vlan_info->old_mc_list = NULL;
++         vlan_destroy_mc_list(vlan_info->old_mc_list);
++         vlan_info->old_mc_list = NULL;
 + 
-+    for (dmi=mc_list; dmi!=NULL; dmi=dmi->next) {
-+       new_dmi = kmalloc(sizeof(*new_dmi), GFP_KERNEL);
-+       if (new_dmi == NULL) {
-+          printk(KERN_ERR "vlan: cannot allocate memory. Multicast may not work properly from now.\n");
-+          return;
-+       }
++         for (dmi=mc_list; dmi!=NULL; dmi=dmi->next) {
++                 new_dmi = kmalloc(sizeof(*new_dmi), GFP_KERNEL);
++                 if (new_dmi == NULL) {
++                         printk(KERN_ERR "vlan: cannot allocate memory. Multicast may not work properly from now.\n");
++                         return;
++                 }
 +       
-+       new_dmi->next = vlan_info->old_mc_list;
-+       vlan_info->old_mc_list = new_dmi;
++                 new_dmi->next = vlan_info->old_mc_list;
++                 vlan_info->old_mc_list = new_dmi;
 +       
-+       new_dmi->dmi_addrlen = dmi->dmi_addrlen;
-+       memcpy(new_dmi->dmi_addr, dmi->dmi_addr, dmi->dmi_addrlen);
-+       new_dmi->dmi_users = dmi->dmi_users;
-+       new_dmi->dmi_gusers = dmi->dmi_gusers;
-+    }
++                 new_dmi->dmi_addrlen = dmi->dmi_addrlen;
++                 memcpy(new_dmi->dmi_addr, dmi->dmi_addr, dmi->dmi_addrlen);
++                 new_dmi->dmi_users = dmi->dmi_users;
++                 new_dmi->dmi_gusers = dmi->dmi_gusers;
++         }
 + }
 + 
 + void vlan_flush_mc_list(struct net_device *dev) {
-+    struct dev_mc_list *dmi = dev->mc_list;
++         struct dev_mc_list *dmi = dev->mc_list;
 + 
-+    while (dmi) {
-+       dev_mc_delete(dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
-+       printk(KERN_INFO "vlan: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from master interface\n",
-+              dmi->dmi_addr[0],
-+              dmi->dmi_addr[1],
-+              dmi->dmi_addr[2],
-+              dmi->dmi_addr[3],
-+              dmi->dmi_addr[4],
-+              dmi->dmi_addr[5]);
-+       dmi = dev->mc_list;
-+    }
++         while (dmi) {
++                 dev_mc_delete(dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
++                 printk(KERN_INFO "vlan: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from master interface\n",
++                        dmi->dmi_addr[0],
++                        dmi->dmi_addr[1],
++                        dmi->dmi_addr[2],
++                        dmi->dmi_addr[3],
++                        dmi->dmi_addr[4],
++                        dmi->dmi_addr[5]);
++                 dmi = dev->mc_list;
++         }
 +    
-+    vlan_destroy_mc_list(dev->mc_list);
-+    if (dev->vlan_dev) {
-+       vlan_destroy_mc_list(dev->vlan_dev->old_mc_list);
-+       dev->vlan_dev->old_mc_list = NULL;
-+    }
-+    dev->mc_list = NULL;
++         vlan_destroy_mc_list(dev->mc_list);
++         if (dev->vlan_dev) {
++                 vlan_destroy_mc_list(dev->vlan_dev->old_mc_list);
++                 dev->vlan_dev->old_mc_list = NULL;
++         }
++         dev->mc_list = NULL;
 + }/* vlan_flush_mc_list */
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.c linux.dev/net/802_1Q/vlanproc.c
 *** linux/net/802_1Q/vlanproc.c	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlanproc.c	Wed Oct 11 20:28:19 2000
+--- linux.dev/net/802_1Q/vlanproc.c	Thu Oct 26 22:09:21 2000
 ***************
 *** 0 ****
---- 1,620 ----
-+ /*****************************************************************************
+--- 1,596 ----
++ /* -*- linux-c -*-
++ ******************************************************************************
 + * vlanproc.c	VLAN Module. /proc filesystem interface.
 + *
 + *		This module is completely hardware-independent and provides
@@ -1860,7 +1825,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	struct file* file,
 + 	unsigned int cmd,
 + 	unsigned long arg
-+ ) {
++         ) {
 + 	int err = 0;
 + 	struct vlan_ioctl_args args;
 +    
@@ -1880,7 +1845,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	}
 +    
 + 	if (copy_from_user(&args, (void*)arg,
-+ 		sizeof(struct vlan_ioctl_args)))
++                            sizeof(struct vlan_ioctl_args)))
 + 		return -EFAULT;
 + 
 + 	/* Null terminate this sucker, just in case. */
@@ -1900,40 +1865,27 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +                 err = vlan_dev_set_vlan_flag(args.dev1, args.u.flag, args.vlan_qos);
 +                 break;
 + 
-+         case SET_BIND_TYPE_IOCTL:
-+                 if (args.u.bind_type == VLAN_BIND_PER_KERNEL) {
-+                    vlan_configured_multiple_groups = 0;
-+                 }
-+                 else if (args.u.bind_type == VLAN_BIND_PER_INTERFACE) {
-+                    vlan_configured_multiple_groups = 1;
-+                 }
-+                 else {
-+                    err = -EINVAL;
-+                 }
-+                 err = 0;
-+                 break;
-+            
 +         case SET_NAME_TYPE_IOCTL:
 +                 if ((args.u.name_type >= 0) && (args.u.name_type < VLAN_NAME_TYPE_HIGHEST)) {
-+                    vlan_name_type = args.u.name_type;
-+                    printk(VLAN_INF "VLAN_SET_NAME_TYPE: new type: %i\n", (int)(args.u.name_type));
-+                    err = 0;
++                         vlan_name_type = args.u.name_type;
++                         printk(VLAN_INF "VLAN_SET_NAME_TYPE: new type: %i\n", (int)(args.u.name_type));
++                         err = 0;
 +                 }
 +                 else {
-+                    printk(VLAN_INF "VLAN_SET_NAME_TYPE, type: %i is invalid.\n", (int)(args.u.name_type));
-+                    err = -EINVAL;
++                         printk(VLAN_INF "VLAN_SET_NAME_TYPE, type: %i is invalid.\n", (int)(args.u.name_type));
++                         err = -EINVAL;
 +                 }
 +                 break;
 +          
-+         /* TODO:  Figure out how to pass info back...
-+         case GET_INGRESS_PRIORITY_IOCTL:
-+            err = vlan_dev_get_ingress_priority(args);
-+            break;
++                 /* TODO:  Figure out how to pass info back...
++                    case GET_INGRESS_PRIORITY_IOCTL:
++                    err = vlan_dev_get_ingress_priority(args);
++                    break;
 + 
-+         case GET_EGRESS_PRIORITY_IOCTL:
-+            err = vlan_dev_get_egress_priority(args);
-+            break;
-+         */
++                    case GET_EGRESS_PRIORITY_IOCTL:
++                    err = vlan_dev_get_egress_priority(args);
++                    break;
++                 */
 +          
 + 	case ADD_VLAN_IOCTL:
 + 		/* we have been given the name of the Ethernet Device we want to
@@ -1954,18 +1906,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 		err = unregister_802_1Q_vlan_device(args.dev1);
 + 		break;
 + 
-+ 	case SET_DEFAULT_VLAN_ID_IOCTL:
-+ 		err = vlan_dev_set_dflt_vid(args.dev1, args.u.VID);
-+ 		break;
-+ 
-+         case SET_DEFAULT_VLAN_PRIORITY_IOCTL:
-+ 		err = vlan_dev_set_dflt_priority(args.dev1, args.u.VID);
-+ 		break;
-+ 
 + 	default:
 + 		/* pass on to underlying device instead?? */
 + 		printk(VLAN_DBG __FUNCTION__ ": Unknown VLAN IOCTL: %x \n",
-+ 									cmd);
++                        cmd);
 + 		return -EINVAL;
 + 	}
 + 
@@ -1985,8 +1929,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +  */
 + 
 + static struct file_operations vlan_fops = {
-+    read:	vlan_proc_read,
-+    ioctl:	vlan_proc_ioctl,
++         read:	vlan_proc_read,
++         ioctl:	vlan_proc_ioctl,
 + };
 + 
 + /*
@@ -1994,8 +1938,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +  */
 + 
 + static struct file_operations vlandev_fops = {
-+    read:	vlan_proc_read,
-+    ioctl:	vlan_proc_ioctl,
++         read:	vlan_proc_read,
++         ioctl:	vlan_proc_ioctl,
 + };
 + 
 + 
@@ -2032,8 +1976,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	if (proc_vlan_conf) remove_proc_entry(name_conf, proc_vlan_dir);
 + 	if (proc_vlan_dir) proc_net_remove(name_root);
 + 	/* TODO:  Take care of dynamically added entries??
-+ 	* Probably only a problem if we ever become a module though..
-+ 	*/
++          * Probably only a problem if we ever become a module though..
++          */
 + }
 + 
 + /*
@@ -2045,12 +1989,12 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	proc_vlan_dir = proc_mkdir(name_root, proc_net);
 + 	if (proc_vlan_dir) {
 + 		proc_vlan_conf = create_proc_entry(name_conf,
-+ 						S_IFREG|S_IRUSR|S_IWUSR,
-+ 						proc_vlan_dir);
++                                                    S_IFREG|S_IRUSR|S_IWUSR,
++                                                    proc_vlan_dir);
 + 		if (proc_vlan_conf) {
-+ 			 proc_vlan_conf->proc_fops = &vlan_fops;
-+ 			 proc_vlan_conf->get_info = vlan_config_get_info;
-+ 			 return 0;
++                         proc_vlan_conf->proc_fops = &vlan_fops;
++                         proc_vlan_conf->get_info = vlan_config_get_info;
++                         return 0;
 + 		}
 + 	}
 + 	vlan_proc_cleanup();
@@ -2065,14 +2009,14 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + {
 + 	if (!vlandev->vlan_dev) {
 + 		printk(KERN_ERR
-+ 			"ERROR:  vlan_proc_add, device -:%s:- is NOT a VLAN\n",
-+ 			vlandev->name);
++                        "ERROR:  vlan_proc_add, device -:%s:- is NOT a VLAN\n",
++                        vlandev->name);
 + 		return -EINVAL;
 + 	}
 +    
 + 	vlandev->vlan_dev->dent = create_proc_entry(vlandev->name,
-+ 						S_IFREG|S_IRUSR|S_IWUSR,
-+ 						proc_vlan_dir);
++                                                     S_IFREG|S_IRUSR|S_IWUSR,
++                                                     proc_vlan_dir);
 + 	if (!vlandev->vlan_dev->dent) {
 + 		return -ENOBUFS;
 + 	}
@@ -2083,7 +2027,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 
 + #ifdef VLAN_DEBUG
 + 	printk(KERN_ERR "vlan_proc_add, device -:%s:- being added.\n",
-+ 		vlandev->name);
++                vlandev->name);
 + #endif
 + 	return 0;
 + }
@@ -2097,7 +2041,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	if (!vlandev || !vlandev->vlan_dev) {
 + #ifdef VLAN_DEBUG
 + 		printk(VLAN_DBG __FUNCTION__ ": invalid argument: %p\n",
-+ 			vlandev);
++                        vlandev);
 + #endif
 + 		return -EINVAL;
 + 	}
@@ -2135,7 +2079,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	char* buf,
 + 	size_t count,
 + 	loff_t *ppos
-+ ) {
++         ) {
 + 	struct inode *inode = file->f_dentry->d_inode;
 + 	struct proc_dir_entry* dent;
 + 	char* page;
@@ -2150,7 +2094,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 		
 + 	page = kmalloc(VLAN_PROC_BUFSZ, GFP_KERNEL);
 + 	VLAN_MEM_DBG("page malloc, addr: %p  size: %i\n",
-+ 		page, VLAN_PROC_BUFSZ);
++                      page, VLAN_PROC_BUFSZ);
 +    
 + 	if (page == NULL)
 + 		return -ENOBUFS;
@@ -2176,44 +2120,34 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +  * The following few functions build the content of /proc/net/vlan/config
 +  */
 + 
-+ static int vlan_proc_get_vlan_info(
-+ 	char* buf,
-+ 	unsigned int cnt
-+ ) {
++ static int vlan_proc_get_vlan_info(char* buf, unsigned int cnt) {
 + 	struct net_device* vlandev = NULL;
 + 	struct vlan_group* grp = NULL;
 + 	int i = 0;
 +         char* nm_type = NULL;
-+         char* bind_type = NULL;
 + 
 + #ifdef VLAN_DEBUG
 + 	printk(VLAN_DBG __FUNCTION__ ": cnt == %i\n", cnt);
 + #endif
 +         
-+         if (vlan_configured_multiple_groups) {
-+            bind_type = "VLAN_BIND_PER_INTERFACE";
-+         }
-+         else {
-+            bind_type = "VLAN_BIND_PER_KERNEL";
-+         }
-+         
 +         if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID) {
-+            nm_type = "VLAN_NAME_TYPE_RAW_PLUS_VID";
++                 nm_type = "VLAN_NAME_TYPE_RAW_PLUS_VID";
 +         }
 +         else if (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID_NO_PAD) {
-+            nm_type = "VLAN_NAME_TYPE_PLUS_VID_NO_PAD";
++                 nm_type = "VLAN_NAME_TYPE_PLUS_VID_NO_PAD";
 +         }
 +         else if (vlan_name_type == VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD) {
-+            nm_type = "VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD";
++                 nm_type = "VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD";
 +         }
 +         else if (vlan_name_type == VLAN_NAME_TYPE_PLUS_VID) {
-+            nm_type = "VLAN_NAME_TYPE_PLUS_VID";
++                 nm_type = "VLAN_NAME_TYPE_PLUS_VID";
 +         }
 +         else {
-+            nm_type = "UNKNOWN";
++                 nm_type = "UNKNOWN";
 +         }
 +    
-+         cnt += sprintf(buf + cnt, "Name-Type: %s  Bind-Type: %s\n", nm_type, bind_type);
++         cnt += sprintf(buf + cnt, "Name-Type: %s  bad_proto_recvd: %lu\n",
++                        nm_type, vlan_bad_proto_recvd);
 +    
 + 	for (grp = p802_1Q_vlan_list; grp != NULL; grp = grp->next) {
 + 		/* loop through all devices for this device */
@@ -2223,7 +2157,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 			if (!vlandev)
 + 				continue;
 + 			printk(VLAN_DBG __FUNCTION__
-+ 				": found a vlan_dev, addr: %p\n", vlandev);
++                                ": found a vlan_dev, addr: %p\n", vlandev);
 + 			if ((cnt + 100) > VLAN_PROC_BUFSZ) {
 + 				if ((cnt+strlen(term_msg)) < VLAN_PROC_BUFSZ) {
 + 					cnt += sprintf(buf+cnt, "%s", term_msg);
@@ -2232,14 +2166,14 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 			}
 + 			if (!vlandev->vlan_dev) {
 + 				printk(KERN_ERR __FUNCTION__
-+ 					": ERROR: vlandev->vlan_dev is NULL\n");
++                                        ": ERROR: vlandev->vlan_dev is NULL\n");
 + 				continue;
 + 			}
 + 			printk(VLAN_DBG __FUNCTION__
-+ 				": got a good vlandev, addr: %p\n",
-+ 				vlandev->vlan_dev);
++                                ": got a good vlandev, addr: %p\n",
++                                vlandev->vlan_dev);
 + 			cnt += sprintf(buf + cnt, "%-15s| %d  | %s\n",
-+ 				 vlandev->name, vlandev->vlan_dev->vlan_id, vlandev->vlan_dev->real_dev->name);
++                                        vlandev->name, vlandev->vlan_dev->vlan_id, vlandev->vlan_dev->real_dev->name);
 + 		}
 + 	}
 + 	return cnt;
@@ -2255,7 +2189,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	char** start,
 + 	off_t offs,
 + 	int len
-+ ) {
++         ) {
 + 	strcpy(buf, conf_hdr);
 + 	return vlan_proc_get_vlan_info(buf, (unsigned int)(strlen(conf_hdr)));
 + }
@@ -2274,7 +2208,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 	char** start,
 + 	off_t offs,
 + 	int len
-+ ) {
++         ) {
 + 	struct net_device* vlandev = (void*)start;
 + 	struct net_device_stats* stats;
 + 	int cnt = 0;
@@ -2308,7 +2242,13 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +         
 +         cnt += sprintf(buf + cnt, "%30s: %12lu\n",
 +                        "total bytes transmitted", stats->tx_bytes);
-+         
++ 
++         cnt += sprintf(buf + cnt, "%30s: %12lu\n",
++                        "total headroom inc", vlandev->vlan_dev->cnt_inc_headroom_on_tx);
++ 
++         cnt += sprintf(buf + cnt, "%30s: %12lu\n",
++                        "total encap on xmit", vlandev->vlan_dev->cnt_encap_on_xmit);
++ 
 +         cnt += sprintf(buf + cnt, "Device: %s", vlandev->vlan_dev->real_dev->name);
 +         
 + 
@@ -2324,35 +2264,35 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 +                        vlandev->vlan_dev->ingress_priority_map[7]);
 + 
 +         if ((cnt + 100) > VLAN_PROC_BUFSZ) {
-+                if ((cnt + strlen(term_msg)) >= VLAN_PROC_BUFSZ) {
-+                   /* should never get here */
-+                   return cnt;
-+                }
-+                else {
-+                   cnt += sprintf(buf + cnt, "%s", term_msg);
-+                   return cnt;
-+                }
++                 if ((cnt + strlen(term_msg)) >= VLAN_PROC_BUFSZ) {
++                         /* should never get here */
++                         return cnt;
++                 }
++                 else {
++                         cnt += sprintf(buf + cnt, "%s", term_msg);
++                         return cnt;
++                 }
 +         }/* if running out of buffer space */
 +    
 +         cnt += sprintf(buf + cnt, "EGRESSS priority Mappings: ");
 +         
 +         for (i = 0; i<16; i++) {
-+                mp = vlandev->vlan_dev->egress_priority_map[i];
-+                while (mp) {
-+                   cnt += sprintf(buf + cnt, "%lu:%hu ", mp->priority, ((mp->vlan_qos >> 13) & 0x7));
++                 mp = vlandev->vlan_dev->egress_priority_map[i];
++                 while (mp) {
++                         cnt += sprintf(buf + cnt, "%lu:%hu ", mp->priority, ((mp->vlan_qos >> 13) & 0x7));
 +                   
-+                   if ((cnt + 100) > VLAN_PROC_BUFSZ) {
-+                      if ((cnt + strlen(term_msg)) >= VLAN_PROC_BUFSZ) {
-+                         /* should never get here */
-+                         return cnt;
-+                      }
-+                      else {
-+                         cnt += sprintf(buf + cnt, "%s", term_msg);
-+                         return cnt;
-+                      }
-+                   }/* if running out of buffer space */
-+                   mp = mp->next;
-+                }
++                         if ((cnt + 100) > VLAN_PROC_BUFSZ) {
++                                 if ((cnt + strlen(term_msg)) >= VLAN_PROC_BUFSZ) {
++                                         /* should never get here */
++                                         return cnt;
++                                 }
++                                 else {
++                                         cnt += sprintf(buf + cnt, "%s", term_msg);
++                                         return cnt;
++                                 }
++                         }/* if running out of buffer space */
++                         mp = mp->next;
++                 }
 +         }/* for */
 + 
 +         cnt += sprintf(buf + cnt, "\n");
@@ -2395,10 +2335,10 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + #endif
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.h linux.dev/net/802_1Q/vlanproc.h
 *** linux/net/802_1Q/vlanproc.h	Wed Dec 31 17:00:00 1969
---- linux.dev/net/802_1Q/vlanproc.h	Sat Oct  7 23:11:18 2000
+--- linux.dev/net/802_1Q/vlanproc.h	Thu Oct 26 00:26:25 2000
 ***************
 *** 0 ****
---- 1,29 ----
+--- 1,27 ----
 + 
 + #ifndef __BEN_VLAN_PROC_INC__
 + #define __BEN_VLAN_PROC_INC__
@@ -2408,8 +2348,6 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/802_1Q/vlanproc.
 + 
 + int vlan_proc_rem_dev(struct net_device* vlandev);
 + int vlan_proc_add_dev (struct net_device* vlandev);
-+ int vlan_proc_rem_port(struct vlan_port* vlandev);
-+ int vlan_proc_add_port (struct vlan_port* vlandev);
 + void vlan_proc_cleanup (void);
 + 
 + 
@@ -2462,7 +2400,16 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/Makefile linux.d
   
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux.dev/net/core/dev.c
 *** linux/net/core/dev.c	Fri Sep 22 14:07:43 2000
---- linux.dev/net/core/dev.c	Wed Oct 11 01:08:02 2000
+--- linux.dev/net/core/dev.c	Tue Oct 17 21:46:48 2000
+***************
+*** 1,3 ****
+! /*
+   * 	NET3	Protocol independent device support routines.
+   *
+--- 1,3 ----
+! /* -*- linux-c -*-
+   * 	NET3	Protocol independent device support routines.
+   *
 ***************
 *** 95,98 ****
 --- 95,103 ----
@@ -2516,8 +2463,8 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 + /* #define FDL_DEBUG */
 + 
 + struct dev_hash_node {
-+    struct net_device* dev;
-+    struct dev_hash_node* next;
++         struct net_device* dev;
++         struct dev_hash_node* next;
 + };
 + 
 + struct dev_hash_node* fdl_name_base[FDL_HASH_LEN];/* hashed by name */
@@ -2527,99 +2474,99 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 + /* TODO:  Make these inline methods */
 + /* Nice cheesy little hash method to be used on device-names (eth0, ppp0, etc) */
 + int fdl_calc_name_idx(const char* dev_name) {
-+    int tmp = 0;
-+    int i;
++         int tmp = 0;
++         int i;
 + #ifdef FDL_DEBUG
-+    printk(KERN_ERR "fdl_calc_name_idx, name: %s\n", dev_name);
++         printk(KERN_ERR "fdl_calc_name_idx, name: %s\n", dev_name);
 + #endif
-+    for (i = 0; dev_name[i]; i++) {
-+       tmp += (int)(dev_name[i]);
-+    }
-+    if (i > 3) {
-+       tmp += (dev_name[i-2] * 10); /* might add a little spread to the hash */
-+       tmp += (dev_name[i-3] * 100); /* might add a little spread to the hash */
-+    }
++         for (i = 0; dev_name[i]; i++) {
++                 tmp += (int)(dev_name[i]);
++         }
++         if (i > 3) {
++                 tmp += (dev_name[i-2] * 10); /* might add a little spread to the hash */
++                 tmp += (dev_name[i-3] * 100); /* might add a little spread to the hash */
++         }
 + #ifdef FDL_DEBUG
-+    printk(KERN_ERR "fdl_calc_name_idx, rslt: %i\n", (int)(tmp % FDL_HASH_LEN));
++         printk(KERN_ERR "fdl_calc_name_idx, rslt: %i\n", (int)(tmp % FDL_HASH_LEN));
 + #endif
-+    return (tmp % FDL_HASH_LEN);
++         return (tmp % FDL_HASH_LEN);
 + }
 + 
 + int fdl_calc_index_idx(const int ifindex) {
-+    return (ifindex % FDL_HASH_LEN);
++         return (ifindex % FDL_HASH_LEN);
 + }
 + 
 + 
 + /* Better have a lock on the dev_base before calling this... */
 + int __fdl_ensure_init(void) {
 + #ifdef FDL_DEBUG
-+    printk(KERN_ERR "__fdl_ensure_init, enter\n");
++         printk(KERN_ERR "__fdl_ensure_init, enter\n");
 + #endif
-+    if (! fdl_initialized_yet) {
-+       /* only do this once.. */
-+       int i;
-+       int idx = 0; /* into the hash table */
-+       struct net_device* dev = dev_base;
-+       struct dev_hash_node* dhn;
++         if (! fdl_initialized_yet) {
++                 /* only do this once.. */
++                 int i;
++                 int idx = 0; /* into the hash table */
++                 struct net_device* dev = dev_base;
++                 struct dev_hash_node* dhn;
 + 
 + #ifdef FDL_DEBUG
-+       printk(KERN_ERR "__fdl_ensure_init, doing real work...");
++                 printk(KERN_ERR "__fdl_ensure_init, doing real work...");
 + #endif
 + 
-+       fdl_initialized_yet = 1; /* it has been attempted at least... */
++                 fdl_initialized_yet = 1; /* it has been attempted at least... */
 + 
-+       for (i = 0; i<FDL_HASH_LEN; i++) {
-+          fdl_name_base[i] = NULL;
-+          fdl_idx_base[i] = NULL;
-+       }
++                 for (i = 0; i<FDL_HASH_LEN; i++) {
++                         fdl_name_base[i] = NULL;
++                         fdl_idx_base[i] = NULL;
++                 }
 + 
-+       /* add any current devices to the hash tables at this time.  Note that
-+        * this method must be called with locks on the dev_base acquired.
-+        */
-+       while (dev) {
++                 /* add any current devices to the hash tables at this time.  Note that
++                  * this method must be called with locks on the dev_base acquired.
++                  */
++                 while (dev) {
 + 
 + #ifdef FDL_DEBUG
-+          printk(KERN_ERR "__fdl_ensure_init, dev: %p dev: %s, idx: %i\n", dev, dev->name, idx);
++                         printk(KERN_ERR "__fdl_ensure_init, dev: %p dev: %s, idx: %i\n", dev, dev->name, idx);
 + #endif
-+          /* first, take care of the hash-by-name */
-+          idx = fdl_calc_name_idx(dev->name);
-+          dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
-+          if (dhn) {
-+             dhn->dev = dev;
-+             dhn->next = fdl_name_base[idx];
-+             fdl_name_base[idx] = dhn;
-+          }
-+          else {
-+             /* Nasty..couldn't get memory... */
-+             return -ENOMEM;
-+          }
++                         /* first, take care of the hash-by-name */
++                         idx = fdl_calc_name_idx(dev->name);
++                         dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
++                         if (dhn) {
++                                 dhn->dev = dev;
++                                 dhn->next = fdl_name_base[idx];
++                                 fdl_name_base[idx] = dhn;
++                         }
++                         else {
++                                 /* Nasty..couldn't get memory... */
++                                 return -ENOMEM;
++                         }
 + 
-+          /* now, do the hash-by-idx */
-+          idx = fdl_calc_index_idx(dev->ifindex);
-+          dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
-+          if (dhn) {
-+             dhn->dev = dev;
-+             dhn->next = fdl_idx_base[idx];
-+             fdl_idx_base[idx] = dhn;
-+          }
-+          else {
-+             /* Nasty..couldn't get memory... */
-+             return -ENOMEM;
-+          }
++                         /* now, do the hash-by-idx */
++                         idx = fdl_calc_index_idx(dev->ifindex);
++                         dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
++                         if (dhn) {
++                                 dhn->dev = dev;
++                                 dhn->next = fdl_idx_base[idx];
++                                 fdl_idx_base[idx] = dhn;
++                         }
++                         else {
++                                 /* Nasty..couldn't get memory... */
++                                 return -ENOMEM;
++                         }
 +          
-+          dev = dev->next;
-+       }
-+       fdl_initialized_yet = 2; /* initialization actually worked */
-+    }
++                         dev = dev->next;
++                 }
++                 fdl_initialized_yet = 2; /* initialization actually worked */
++         }
 + #ifdef FDL_DEBUG
-+    printk(KERN_ERR "__fdl_ensure_init, end, fdl_initialized_yet: %i\n", fdl_initialized_yet);
++         printk(KERN_ERR "__fdl_ensure_init, end, fdl_initialized_yet: %i\n", fdl_initialized_yet);
 + #endif
-+    if (fdl_initialized_yet == 2) {
-+       return 0;
-+    }
-+    else {
-+       return -1;
-+    }
++         if (fdl_initialized_yet == 2) {
++                 return 0;
++         }
++         else {
++                 return -1;
++         }
 + }/* fdl_ensure_init */
 + 
 + 
@@ -2627,48 +2574,48 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 +  * will be calling __find_dev_by_name before this exits.. etc.
 +  */
 + int __fdl_register_netdevice(struct net_device* dev) {
-+    if (__fdl_ensure_init() == 0) {
-+       /* first, take care of the hash-by-name */
-+       int idx = fdl_calc_name_idx(dev->name);
-+       struct dev_hash_node* dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
++         if (__fdl_ensure_init() == 0) {
++                 /* first, take care of the hash-by-name */
++                 int idx = fdl_calc_name_idx(dev->name);
++                 struct dev_hash_node* dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
 + 
 + #ifdef FDL_DEBUG
-+       printk(KERN_ERR "__fdl_register_netdevice, dev: %p dev: %s, idx: %i", dev, dev->name, idx);
++                 printk(KERN_ERR "__fdl_register_netdevice, dev: %p dev: %s, idx: %i", dev, dev->name, idx);
 + #endif
 + 
-+       if (dhn) {
-+          dhn->dev = dev;
-+          dhn->next = fdl_name_base[idx];
-+          fdl_name_base[idx] = dhn;
-+       }
-+       else {
-+          /* Nasty..couldn't get memory... */
-+          /* Don't try to use these hash tables any more... */
-+          fdl_initialized_yet = 1; /* tried, but failed */
-+          return -ENOMEM;
-+       }
++                 if (dhn) {
++                         dhn->dev = dev;
++                         dhn->next = fdl_name_base[idx];
++                         fdl_name_base[idx] = dhn;
++                 }
++                 else {
++                         /* Nasty..couldn't get memory... */
++                         /* Don't try to use these hash tables any more... */
++                         fdl_initialized_yet = 1; /* tried, but failed */
++                         return -ENOMEM;
++                 }
 +       
-+       /* now, do the hash-by-idx */
-+       idx = fdl_calc_index_idx(dev->ifindex);
-+       dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
++                 /* now, do the hash-by-idx */
++                 idx = fdl_calc_index_idx(dev->ifindex);
++                 dhn = kmalloc(sizeof(struct dev_hash_node), GFP_ATOMIC);
 + 
 + #ifdef FDL_DEBUG
-+       printk(KERN_ERR "__fdl_register_netdevice, ifindex: %i, idx: %i", dev->ifindex, idx);
++                 printk(KERN_ERR "__fdl_register_netdevice, ifindex: %i, idx: %i", dev->ifindex, idx);
 + #endif
 + 
-+       if (dhn) {
-+          dhn->dev = dev;
-+          dhn->next = fdl_idx_base[idx];
-+          fdl_idx_base[idx] = dhn;
-+       }
-+       else {
-+          /* Nasty..couldn't get memory... */
-+          /* Don't try to use these hash tables any more... */
-+          fdl_initialized_yet = 1; /* tried, but failed */
-+          return -ENOMEM;
-+       }
-+    }
-+    return 0;
++                 if (dhn) {
++                         dhn->dev = dev;
++                         dhn->next = fdl_idx_base[idx];
++                         fdl_idx_base[idx] = dhn;
++                 }
++                 else {
++                         /* Nasty..couldn't get memory... */
++                         /* Don't try to use these hash tables any more... */
++                         fdl_initialized_yet = 1; /* tried, but failed */
++                         return -ENOMEM;
++                 }
++         }
++         return 0;
 + } /* fdl_register_netdevice */
 + 
 + 
@@ -2677,70 +2624,70 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 +  * returns -1 otherwise.
 +  */
 + int __fdl_unregister_netdevice(struct net_device* dev) {
-+    int retval = -1;
-+    if (fdl_initialized_yet == 2) { /* If we've been initialized correctly... */
-+       /* first, take care of the hash-by-name */
-+       int idx = fdl_calc_name_idx(dev->name);
-+       struct dev_hash_node* prev = fdl_name_base[idx];
-+       struct dev_hash_node* cur = NULL;
++         int retval = -1;
++         if (fdl_initialized_yet == 2) { /* If we've been initialized correctly... */
++                 /* first, take care of the hash-by-name */
++                 int idx = fdl_calc_name_idx(dev->name);
++                 struct dev_hash_node* prev = fdl_name_base[idx];
++                 struct dev_hash_node* cur = NULL;
 + 
 + #ifdef FDL_DEBUG
-+       printk(KERN_ERR "__fdl_unregister_netdevice, dev: %p dev: %s, idx: %i", dev, dev->name, idx);
++                 printk(KERN_ERR "__fdl_unregister_netdevice, dev: %p dev: %s, idx: %i", dev, dev->name, idx);
 + #endif
 + 
-+       if (prev) {
-+          if (strcmp(dev->name, prev->dev->name) == 0) {
-+             /* it's the first one... */
-+             fdl_name_base[idx] = prev->next;
-+             kfree(prev);
-+             retval = 0;
-+          }
-+          else {
-+             cur = prev->next;
-+             while (cur) {
-+                if (strcmp(dev->name, cur->dev->name) == 0) {
-+                   prev->next = cur->next;
-+                   kfree(cur);
-+                   retval = 0;
-+                   break;
-+                }
-+                else {
-+                   prev = cur;
-+                   cur = cur->next;
-+                }
-+             }
-+          }
-+       }
++                 if (prev) {
++                         if (strcmp(dev->name, prev->dev->name) == 0) {
++                                 /* it's the first one... */
++                                 fdl_name_base[idx] = prev->next;
++                                 kfree(prev);
++                                 retval = 0;
++                         }
++                         else {
++                                 cur = prev->next;
++                                 while (cur) {
++                                         if (strcmp(dev->name, cur->dev->name) == 0) {
++                                                 prev->next = cur->next;
++                                                 kfree(cur);
++                                                 retval = 0;
++                                                 break;
++                                         }
++                                         else {
++                                                 prev = cur;
++                                                 cur = cur->next;
++                                         }
++                                 }
++                         }
++                 }
 + 
-+       /* Now, the hash-by-index */
-+       idx = fdl_calc_index_idx(dev->ifindex);
-+       prev = fdl_idx_base[idx];
-+       cur = NULL;
-+       if (prev) {
-+          if (dev->ifindex == prev->dev->ifindex) {
-+             /* it's the first one... */
-+             fdl_idx_base[idx] = prev->next;
-+             kfree(prev);
-+             retval = 0;
-+          }
-+          else {
-+             cur = prev->next;
-+             while (cur) {
-+                if (dev->ifindex == cur->dev->ifindex) {
-+                   prev->next = cur->next;
-+                   kfree(cur);
-+                   retval = 0;
-+                   break;
-+                }
-+                else {
-+                   prev = cur;
-+                   cur = cur->next;
-+                }
-+             }
-+          }
-+       }
-+    }/* if we ensured init OK */
-+    return retval;
++                 /* Now, the hash-by-index */
++                 idx = fdl_calc_index_idx(dev->ifindex);
++                 prev = fdl_idx_base[idx];
++                 cur = NULL;
++                 if (prev) {
++                         if (dev->ifindex == prev->dev->ifindex) {
++                                 /* it's the first one... */
++                                 fdl_idx_base[idx] = prev->next;
++                                 kfree(prev);
++                                 retval = 0;
++                         }
++                         else {
++                                 cur = prev->next;
++                                 while (cur) {
++                                         if (dev->ifindex == cur->dev->ifindex) {
++                                                 prev->next = cur->next;
++                                                 kfree(cur);
++                                                 retval = 0;
++                                                 break;
++                                         }
++                                         else {
++                                                 prev = cur;
++                                                 cur = cur->next;
++                                         }
++                                 }
++                         }
++                 }
++         }/* if we ensured init OK */
++         return retval;
 + } /* fdl_unregister_netdevice */
 + 
 + 
@@ -2767,18 +2714,18 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 !         struct dev_hash_node* dhn;
 !         if (fdl_initialized_yet == 2) {
 ! #ifdef FDL_DEBUG
-!            printk(KERN_ERR "__dev_get_by_name, name: %s  idx: %i\n", name, idx);
+!                 printk(KERN_ERR "__dev_get_by_name, name: %s  idx: %i\n", name, idx);
 ! #endif
-!            dhn = fdl_name_base[idx];
-!            while (dhn) {
-!               if (strcmp(dhn->dev->name, name) == 0) {
-!                  /* printk(KERN_ERR "__dev_get_by_name, found it: %p\n", dhn->dev); */
-!                  return dhn->dev;
-!               }
-!               dhn = dhn->next;
-!            }
-!            /* printk(KERN_ERR "__dev_get_by_name, didn't find it for name: %s\n", name); */
-!            return NULL;
+!                 dhn = fdl_name_base[idx];
+!                 while (dhn) {
+!                         if (strcmp(dhn->dev->name, name) == 0) {
+!                                 /* printk(KERN_ERR "__dev_get_by_name, found it: %p\n", dhn->dev); */
+!                                 return dhn->dev;
+!                         }
+!                         dhn = dhn->next;
+!                 }
+!                 /* printk(KERN_ERR "__dev_get_by_name, didn't find it for name: %s\n", name); */
+!                 return NULL;
 !         }
 ! #endif
   	for (dev = dev_base; dev != NULL; dev = dev->next) {
@@ -2800,13 +2747,13 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 +         int idx = fdl_calc_index_idx(ifindex);
 +         struct dev_hash_node* dhn;
 +         if (fdl_initialized_yet == 2) { /* have we gone through initialization before... */
-+            dhn = fdl_idx_base[idx];
-+            while (dhn) {
-+               if (dhn->dev->ifindex == ifindex)
-+                  return dhn->dev;
-+               dhn = dhn->next;
-+            }
-+            return NULL;
++                 dhn = fdl_idx_base[idx];
++                 while (dhn) {
++                         if (dhn->dev->ifindex == ifindex)
++                                 return dhn->dev;
++                         dhn = dhn->next;
++                 }
++                 return NULL;
 +         }
 + #endif
 + 
@@ -2843,8 +2790,25 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
   }
   
 ***************
+*** 1923,1928 ****
+--- 2216,2229 ----
+  			if (__dev_get_by_name(ifr->ifr_newname))
+  				return -EEXIST;
++ #ifdef BENS_FAST_DEV_LOOKUP
++                         write_lock_bh(&dev_base_lock); /* gotta lock it to remove stuff */
++                         __fdl_unregister_netdevice(dev); /* remove it from the hash.. */
++ #endif
+  			memcpy(dev->name, ifr->ifr_newname, IFNAMSIZ);
+  			dev->name[IFNAMSIZ-1] = 0;
++ #ifdef BENS_FAST_DEV_LOOKUP
++                         __fdl_register_netdevice(dev);
++                         write_unlock_bh(&dev_base_lock); /* gotta lock it to add stuff too */
++ #endif                        
+  			notifier_call_chain(&netdev_chain, NETDEV_CHANGENAME, dev);
+  			return 0;
+***************
 *** 2179,2182 ****
---- 2472,2481 ----
+--- 2480,2489 ----
   		dev->next = NULL;
   		write_lock_bh(&dev_base_lock);
 + #ifdef BENS_FAST_DEV_LOOKUP
@@ -2857,7 +2821,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
   		dev_hold(dev);
 ***************
 *** 2227,2230 ****
---- 2526,2535 ----
+--- 2534,2543 ----
   	dev_init_scheduler(dev);
   	write_lock_bh(&dev_base_lock);
 + #ifdef BENS_FAST_DEV_LOOKUP
@@ -2875,7 +2839,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
 ! 			write_unlock_bh(&dev_base_lock);
   			break;
   		}
---- 2597,2604 ----
+--- 2605,2612 ----
   			write_lock_bh(&dev_base_lock);
   			*dp = d->next;
 ! #ifdef BENS_FAST_DEV_LOOKUP
@@ -2886,7 +2850,7 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/core/dev.c linux
   		}
 diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c linux.dev/net/ethernet/eth.c
 *** linux/net/ethernet/eth.c	Tue Aug 22 08:59:00 2000
---- linux.dev/net/ethernet/eth.c	Sat Oct  7 23:11:40 2000
+--- linux.dev/net/ethernet/eth.c	Wed Oct 25 23:52:43 2000
 ***************
 *** 175,178 ****
 --- 175,181 ----
@@ -2937,22 +2901,21 @@ diff -P -C 2 -X /home/greear/exclude.list --recursive linux/net/ethernet/eth.c l
 ! 	
   	if (ntohs(eth->h_proto) >= 1536)
   		return eth->h_proto;
---- 222,241 ----
+--- 222,240 ----
   			skb->pkt_type=PACKET_OTHERHOST;
   	}
 ! 
 ! #ifdef CONFIG_VLAN_802_1Q
-!         if ((ntohs(eth->h_proto) == ETH_P_802_1Q) ||
-!             (dev->default_vid > 0)) {
-!            /* then we have to convert this into a VLAN looking packet.
-!             * We'll wait to do that in the VLAN protocol handler.
-!             *
-!             * NOTE:  We DO NOT PULL ANYTHING FROM THE SKB HERE!!!
-!             */
-!            return __constant_htons(ETH_P_802_1Q);
+!         if (ntohs(eth->h_proto) == ETH_P_802_1Q) {
+!                 /* then we have to convert this into a VLAN looking packet.
+!                  * We'll wait to do that in the VLAN protocol handler.
+!                  *
+!                  * NOTE:  We DO NOT PULL ANYTHING FROM THE SKB HERE!!!
+!                  */
+!                 return __constant_htons(ETH_P_802_1Q);
 !         }
 !         else {
-!            skb_pull(skb, dev->hard_header_len);
+!                 skb_pull(skb, dev->hard_header_len);
 !         }
 ! #endif
 !         

@@ -11,7 +11,7 @@ MAKE=make
 #  Normally won't have to configure under here...
 ###################################################
 
-VERSION=0.0.7
+VERSION=0.0.14
 
 CUR_DATE=`date '+%y.%m.%d'`
 
