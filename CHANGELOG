@@ -1,10 +1,39 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            October 11, 2000
+Version:         0.0.13
+Kernel Version:  2.2.17, 2.4.pre9
+Status:          This one is pretty fresh..beware, especially the new features.
+Changes:         
+
+	        Added support for MULTICAST to the VLAN devices. Thanks to
+	        Gleb & Co for most of that code. 
+        
+	        Added the ability to set the MAC address on the VLAN. For now,
+	        you'll either need to set your Ethernet NIC into PROMISC mode, or
+		maybe figure out some multi-cast ethernet address to set on the
+		NIC. This has not been tested well at all. 
+        
+	        Added a hashed device-name lookup scheme. This greatly speeds
+	        up ifconfig -a. I was able to run an ifconfig -a in 20 seconds on a
+	        Celeron 500, with 4000 vlan devices configured!! 
+        
+	        Added vlan_test.pl to help me find dumb bugs. Feel free to make this
+	        much more powerful, and send the code back to me! 
+        
+	        vconfig.c has been converted to C code now, instead of C++.
+	        Thanks to MATHIEU. 
+        
+	        Significantly cleaned up the code w/out decreasing any useful
+	        functionality, I believe.
+
+		Removed the dhcp stuff from the VLAN distribution.
+
 Date:            August 27, 2000
 Version:         0.0.12
 Kernel Version:  2.2.16, 2.4.pre7
-Status:          Added several new features in the critical path...beware!
+Status:          This one turned out pretty stable, no known bugs.
 Changes:         
 
   		Added ability to re-order the VLAN packet so that it looks

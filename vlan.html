@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated August 27, 2000<br>
-Release:  0.0.12</br>
+Updated Oct 11, 2000<br>
+Release:  0.0.13</br>
 </i></center>
 <P>
 
@@ -26,8 +26,13 @@ many ethernet drivers.  Other than that, things seem fairly stable!
 <br>
 Let us help you test your DSL, Cable Access, and other systems!</b>
 </center>
+<font size = -1>
+<BR>
+If you find this software useful, and wish to send me a tip, see
+<a href="http://scry.wanfear.com/~greear" target="_top"> my home page.</a><P>
+</font>
 
-<BR>Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
+Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
  After that, to post, send mail to 
 <A HREF="mailto:vlan@scry.wanfear.com">vlan@scry.wanfear.com</a>.
 <P>
@@ -38,7 +43,7 @@ Submit a bug/issue/enhancement with:  <a href="http://grok.yi.org:9001/IssueTrac
 Though I have no real VLAN hardware of my own, I hear that the code (2.2 kernel patches) has worked
 with these systems: <P>
 <ul>
-  <li> Cisco Catalyst, 3Com Corebuilder, Netbuilder II, Extreme Ntwks Summit 48,
+  <li> Cisco Catalyst, 3Com: {Corebuilder, Netbuilder II, SuperStack II switch 630}, Extreme Ntwks Summit 48,
        Foundry: {ServerIronXL, FastIron}</li>
   <li> Alteon ACENic Gigabit, 3Com 3c509, realtek RTL8029(AS), RTL8139, DEC DC21140 (tulip)
   </li>
@@ -72,6 +77,30 @@ Here are the numbers:<br>
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.0.0.13.tar.gz">Release 0.0.13 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 11, 2000:</b><br>
+  <center><b>NOT WELL TESTED YET, use 0.0.12 if un-brave</b></center>
+  <P>
+  <ul>
+   <li>Added support for MULTICAST to the VLAN devices.  Thanks to
+       <a href="http://vlan.sourceforge.net" target=_top>Gleb & Co</a> for most of
+       that code.</li>
+   <li>Added the ability to set the MAC address on the VLAN.  For now, you'll either need
+       to set your Ethernet NIC into PROMISC mode, or maybe figure out some multi-cast
+       ethernet address to set on the NIC.  This has not been tested well at all.</li>
+   <li>Added a hashed device-name lookup scheme.  This greatly speeds up ifconfig -a.
+       I was able to run an ifconfig -a in 20 seconds on a Celeron 500, with 4000
+       vlan devices configured!!</li>
+   <li>Added vlan_test.pl to help me find dumb bugs.  Feel free to make this much
+       more powerful, and send the code back to me!</li>
+   <li>vconfig.c has been converted to C code now, instead of C++.  Thanks to MATHIEU.</li>
+   <li>Significantly cleaned up the code w/out decreasing any useful functionality,
+       I believe.</li>
+   <li>Removed the DHCP stuff from the VLAN distribution.</li>
+  </ul>
+
+</li>
+<P>
+
 <li> <b><a href="vlan/vlan.0.0.12.tar.gz">Release 0.0.12 (gz)</a> &nbsp; For Kernel: 2.2.16, 2.4.pre7 &nbsp; August 27, 2000:</b><br>
   Added ability to re-order the VLAN packet so that it looks like a real ethernet
   packet for the ingress pathway.  This should help DHCP and other programs that insist
@@ -274,7 +303,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Sun Aug 27 20:36:43 MST 2000
+Last modified: Wed Oct 11 22:04:36 MST 2000
 <!-- hhmts end -->
   </body>
 </html>

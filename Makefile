@@ -23,11 +23,10 @@ ${VCONFIG}: $(VLAN_OBJS)
 	$(CCC) $(CCFLAGS) $(LDFLAGS) -o $(VCONFIG) $(VLAN_OBJS) $(LDLIBS)
 
 
-$(ALL_OBJS): %.o: %.cc %.h
+$(ALL_OBJS): %.o: %.c %.h
 	@echo " "
 	@echo "Making $<"
-	$(CC) $(CCFLAGS) \
-	-c $<
+	$(CC) $(CCFLAGS) -c $<
 
 clean:
 	rm -f *.o
