@@ -3,10 +3,10 @@
 D/libpcap-0.4////
 D/tcpdump-3.4////
 /vlan_2.2.patch/1.7/Mon Jan 15 03:30:45 2001//
-/CHANGELOG/1.13/Tue Apr 17 04:49:10 2001//
 D/contrib////
-/vlan.html/1.16/Mon Jun 18 22:39:24 2001//
 /MakeInclude/1.6/Tue Jun 19 22:52:13 2001//
-/vconfig.c/1.4/Tue Jun 19 22:51:24 2001//
-/vlan_2.4.patch/1.11/Wed Aug  1 04:11:17 2001//
 /vlan_test.pl/1.4/Wed Aug  1 02:52:33 2001//
+/CHANGELOG/1.15/Thu Aug 16 20:54:24 2001//
+/vconfig.c/1.5/Thu Aug 16 18:04:11 2001//
+/vlan.html/1.18/Thu Aug 16 20:54:45 2001//
+/vlan_2.4.patch/1.13/Thu Aug 16 20:53:39 2001//

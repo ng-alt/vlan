@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated April 16, 2001<br>
-Release:  1.0.1</br>
+Updated August 16, 2001<br>
+Release:  1.4</br>
 </i></center>
 <P>
 
@@ -18,7 +18,7 @@ MTU problems exist for many ethernet drivers.  Other than that, things seem fair
 
 <center>
 <B>PLUG: &nbsp; Check out my company that makes traffic generation and WAN simulation
-   test equipment, based on the Linux operating system:<br>
+   test equipment based on the Linux operating system:<br>
     <a target=_top href="http://www.candelatech.com"><img src="http://www.candelatech.com/images/candela_swirl_small.png"
                                                       alt="Candela Technologies"
                                                       border=0></a>
@@ -88,6 +88,23 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.4.tar.gz">Release 1.4 (gz)</a> &nbsp; For Kernel: 2.4.8 &nbsp; August 16, 2001:</b><br>
+  <P>
+  <ul>
+   <li> Code should no longer require /proc interface in order to get at the IOCTLs.
+        The IOCTLs are now tied to sockets.  When using modules, it may auto-load now, too...</li>
+   <li> Fixed format string error in proc fs display.</li>
+   <li> Fixed crash bug relating to memory allocation with locks held (we now use GF_ATOMIC)</li>
+   <li> hard_start_xmit will now grow the packet header if there is not enough headroom.  This
+        may fix an MPLS-over-VLAN problem, though the real solution is to make MPLS allocate
+        more headroom anyway...</li>
+   <li> vconfig was changed to use the new IOCTL API, and the old vconfig WILL NOT WORK
+        with this or any newer patches...</li>
+  </ul>
+</li>
+<P>
+
+<P>
 <li> <b><a href="vlan/vlan.1.0.3.tar.gz">Release 1.0.3 (gz)</a> &nbsp; For Kernel: 2.4.7 &nbsp; August 5, 2001:</b><br>
   <P>
   <ul>
@@ -100,6 +117,7 @@ someone has done some sort of benchmark, I'll be happy to place it here!
   </ul>
 
 </li>
+<P>
 
 <li> <b><a href="vlan/vlan.1.0.1.tar.gz">Release 1.0.1 (gz)</a> &nbsp; For Kernel: 2.2.18/19, 2.4.3-pre3 &nbsp; April 16, 2001:</b><br>
   <P>
@@ -311,7 +329,7 @@ There should be a config programs in your $HOME/vlan
 directory:  <tt>vconfig</tt>.  <b>vconfig</b> is used
 to create and destroy VLAN devices. So, lets create a VLAN device on your
 first ethernet NIC.  vconfig&lt;return> will list a short spiel on how to
-use it.  The command I usually use is:
+use it.  The vconfig command I usually use is:
 <P>
 
 <tt>vconfig add eth0 5</tt>
@@ -340,7 +358,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Sun Aug  5 20:58:48 MST 2001
+Last modified: Thu Aug 16 13:54:45 MST 2001
 <!-- hhmts end -->
   </body>
 </html>

@@ -6,7 +6,10 @@
 #include <strings.h>
 #include <sys/ioctl.h>
 #include <linux/if_vlan.h>
+#include <linux/sockios.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 
 #define MAX_HOSTNAME 256
@@ -40,15 +43,10 @@ Usage: add             [interface-name] [vlan_id]
 ";
 
 void show_usage() {
-   // MATHIEU
-   // printf(usage);
    fprintf(stdout,usage);
-
 }
 
 int hex_to_bytes(char* bytes, int bytes_length, char* hex_str) {
-   // MATHIEU
-   // int hlen = strlen(hex_str);
    int hlen;
    int i;
    
@@ -56,13 +54,10 @@ int hex_to_bytes(char* bytes, int bytes_length, char* hex_str) {
    char hex[3];
    char* stop; /* not used for any real purpose */
 
-   // MATHIEU
    hlen = strlen(hex_str);
 
    hex[2] = 0;
 
-   // MATHIEU
-   //for (int i = 0; i<hlen; i++) {
    for (i = 0; i<hlen; i++) {
 
       hex[0] = hex_str[i];
@@ -94,11 +89,9 @@ int main(int argc, char** argv) {
    memset(&if_request, 0, sizeof(struct vlan_ioctl_args));
    
    if ((argc < 3) || (argc > 5)) {
-      // MATHIEU
-      // cerr << "Expecting argc to be 3-5, inclusive.  Was: " << argc << endl;
       fprintf(stdout,"Expecting argc to be 3-5, inclusive.  Was: %d\n",argc);
 
-          show_usage();
+      show_usage();
       exit(1);
    }
    else {
@@ -136,7 +129,7 @@ int main(int argc, char** argv) {
                         
                         exit(1);
          }
-         strcpy(if_request.dev1, if_name);
+         strcpy(if_request.device1, if_name);
       }
 
       if (argc == 4) {
@@ -156,129 +149,93 @@ int main(int argc, char** argv) {
    if ((fd = open(conf_file_name, O_RDONLY)) < 0) {
       // MATHIEU
       //cerr << "ERROR:  Could not open /proc/vlan/config.\n";
-      fprintf(stderr,"ERROR:  Could not open /proc/vlan/config.\n");
+      fprintf(stderr,"WARNING:  Could not open /proc/net/vlan/config.  Maybe you need to load the 8021q module, or maybe you are not using PROCFS??\n");
           
-          exit(3);
+   }
+   else {
+      close(fd);
    }
 
+   /* We use sockets now, instead of the file descriptor */
+   if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      fprintf(stderr, "FATAL:  Couldn't open a socket..go figure!\n");
+      exit(2);
+   }   
 
    /* add */
    if (strcasecmp(cmd, "add") == 0) {
-      if (ioctl(fd, ADD_VLAN_IOCTL, &if_request) < 0) {
-         // MATHIEU
-             //cerr << "ERROR: trying to add VLAN #" << vid << " to IF -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
+      if_request.cmd = ADD_VLAN_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to add VLAN #%u to IF -:%s:-  error: %s\n",
-                    vid, if_name, strerror(errno));
-                 
+                    vid, if_name, strerror(errno));                 
       }
       else {
-         // MATHIEU
-         // cout << "Added VLAN with VID == " << vid << " to IF -:"
-         //     << if_name << ":-" << endl;
          fprintf(stdout,"Added VLAN with VID == %u to IF -:%s:-\n",
-                            vid, if_name);
+                 vid, if_name);
          if (vid == 1) {
             fprintf(stdout, "WARNING:  VLAN 1 does not work with many switches,\nconsider another number if you have problems.\n");
          }
       }
    }//if
    else if (strcasecmp(cmd, "rem") == 0) {
-      if (ioctl(fd, DEL_VLAN_IOCTL, &if_request) < 0) {
-         // MATHIEU
-                 //cerr << "ERROR: trying to remove VLAN #" << vid << " to IF -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
+      if_request.cmd = DEL_VLAN_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to remove VLAN -:%s:- error: %s\n",
-                 if_name, strerror(errno));
-         
+                 if_name, strerror(errno));         
       }
       else {
-             // MATHIEU
-         //cout << "Removed VLAN with VID == " << vid << " from IF -:"
-                 //     << if_name << ":-" << endl;
          fprintf(stdout,"Removed VLAN -:%s:-\n", if_name);
-
       }
    }//if
    else if (strcasecmp(cmd, "set_egress_map") == 0) {
-      if (ioctl(fd, SET_EGRESS_PRIORITY_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set egress map on device -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
+      if_request.cmd = SET_VLAN_EGRESS_PRIORITY_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set egress map on device -:%s:- error: %s\n",
-                                if_name, strerror(errno));
-         
+                 if_name, strerror(errno));         
       }
       else {
-         // MATHIEU
-         //cout << "Set egress mapping on device -:"
-         //     << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
          fprintf(stdout,"Set egress mapping on device -:%s:- "
-                                "Should be visible in /proc/net/vlan/%s\n",
-                                if_name, if_name);
-         
+                 "Should be visible in /proc/net/vlan/%s\n",
+                 if_name, if_name);
       }
    }
    else if (strcasecmp(cmd, "set_ingress_map") == 0) {
-      if (ioctl(fd, SET_INGRESS_PRIORITY_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set ingress map on device -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
+      if_request.cmd = SET_VLAN_INGRESS_PRIORITY_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set ingress map on device -:%s:- error: %s\n",
-                                if_name, strerror(errno));
-         
+                 if_name, strerror(errno));
       }
       else {
-         // MATHIEU
-         //cout << "Set ingress mapping on device -:"
-         //     << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
          fprintf(stdout,"Set ingress mapping on device -:%s:- "
-                                "Should be visible in /proc/net/vlan/%s\n",
-                                if_name, if_name);
-                                 
+                 "Should be visible in /proc/net/vlan/%s\n",
+                 if_name, if_name);                
       }
    }   
    else if (strcasecmp(cmd, "set_flag") == 0) {
-      if (ioctl(fd, SET_VLAN_FLAG_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set flag on device -:"
-         //     << if_name << ":-  error: " << strerror(errno) << endl;
+      if_request.cmd = SET_VLAN_FLAG_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set flag on device -:%s:- error: %s\n",
-                            if_name, strerror(errno));
-         
+                 if_name, strerror(errno));
       }
       else {
-         // MATHIEU
-         //cout << "Set flag on device -:"
-         //     << if_name << ":-  Should be visible in /proc/net/vlan/" << if_name << endl;
          fprintf(stdout,"Set flag on device -:%s:- "
-                            "Should be visible in /proc/net/vlan/%s\n",
-                                if_name, if_name);
-         
+                 "Should be visible in /proc/net/vlan/%s\n",
+                 if_name, if_name);
       }
-   }   
+   }
    else if (strcasecmp(cmd, "set_name_type") == 0) {
-      if (ioctl(fd, SET_NAME_TYPE_IOCTL, &if_request) < 0) {
-         // MATHIEU
-         //cerr << "ERROR: trying to set name type for VLAN subsystem, error: "
-         //     << strerror(errno) << endl;
+      if_request.cmd = SET_VLAN_NAME_TYPE_CMD;
+      if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set name type for VLAN subsystem, error: %s\n",
-                                strerror(errno));
-         
+                 strerror(errno));         
       }
       else {
-         // MATHIEU
-         //cout << "Set name-type for VLAN subsystem.  Should be visible in /proc/net/vlan/config"
-         //     << endl;
          fprintf(stdout,"Set name-type for VLAN subsystem."
-                                " Should be visible in /proc/net/vlan/config\n");
-         
+                 " Should be visible in /proc/net/vlan/config\n");         
       }
    }
    else {
-      // MATHIEU
-      //cerr << "Unknown command -:" << cmd << ":-\n";
-      fprintf(stderr,"Unknown command -:%s:-\n", cmd);
+      fprintf(stderr, "Unknown command -:%s:-\n", cmd);
 
       show_usage();
       exit(5);

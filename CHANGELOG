@@ -1,6 +1,30 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            August 16, 2001
+Version:         1.4
+Kernel Version:  2.4.9-pre4
+Status:          Should be stable, but a decent amount of rework went into
+                 this one...
+Changes:         
+                 Code should no longer require /proc interface in order to
+                 get at the IOCTLs. The IOCTLs are now tied to sockets.
+                 When using modules, it may auto-load now, too...
+
+                 Fixed format string error in proc fs display.
+
+                 Fixed crash bug relating to memory allocation with locks
+                 held (we now use GF_ATOMIC).
+
+                 hard_start_xmit will now grow the packet header if there
+                 is not enough headroom.  This may fix an MPLS-over-VLAN problem,
+                 though the real solution is to make MPLS allocate
+                 more headroom anyway...
+
+                 vconfig was changed to use the new IOCTL API, and the old
+                 vconfig WILL NOT WORK with this or any newer patches...
+
+
 Date:            August 5, 2001
 Version:         1.0.3
 Kernel Version:  2.4.7
