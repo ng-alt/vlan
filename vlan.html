@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated August 16, 2001<br>
-Release:  1.4</br>
+Updated October 22, 2001<br>
+Release:  1.5</br>
 </i></center>
 <P>
 
@@ -88,6 +88,22 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.5.tar.gz">Release 1.5 (gz)</a> &nbsp; For Kernel: 2.4.12-pre5 &nbsp; October 22, 2001:</b><br>
+  <P>
+  <ul>
+   <li>Mostly added other peoples fixes and patches (thanks folks!)</li>
+   <li>Finally fixed mc-list leakage (Ard van Breemen)</li>
+   <li>Flush mc-list at vlan-destory (Ard van Breemen)</li>
+   <li>Add vconfig man page to distribution (Ard van Breemen)</li>
+   <li>Fix problem with /proc and renaming VLAN devices (af AT devcon D.T net)</li>
+   <li>Add relatively large change by Nick Eggelston that makes VLAN
+       devices more transparent to tools like tcpdump and other raw
+       packet snoopers.  This will only be enabled when the REORDER_HDR
+       flag is set.</li>
+  </ul>
+</li>
+<P>
+
 <li> <b><a href="vlan/vlan.1.4.tar.gz">Release 1.4 (gz)</a> &nbsp; For Kernel: 2.4.8 &nbsp; August 16, 2001:</b><br>
   <P>
   <ul>
@@ -102,7 +118,6 @@ someone has done some sort of benchmark, I'll be happy to place it here!
         with this or any newer patches...</li>
   </ul>
 </li>
-<P>
 
 <P>
 <li> <b><a href="vlan/vlan.1.0.3.tar.gz">Release 1.0.3 (gz)</a> &nbsp; For Kernel: 2.4.7 &nbsp; August 5, 2001:</b><br>
@@ -358,7 +373,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Thu Aug 16 13:54:45 MST 2001
+Last modified: Mon Oct 22 21:19:29 MST 2001
 <!-- hhmts end -->
   </body>
 </html>

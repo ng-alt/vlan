@@ -6,7 +6,8 @@ D/tcpdump-3.4////
 D/contrib////
 /MakeInclude/1.6/Tue Jun 19 22:52:13 2001//
 /vlan_test.pl/1.4/Wed Aug  1 02:52:33 2001//
-/CHANGELOG/1.15/Thu Aug 16 20:54:24 2001//
 /vconfig.c/1.5/Thu Aug 16 18:04:11 2001//
-/vlan.html/1.18/Thu Aug 16 20:54:45 2001//
-/vlan_2.4.patch/1.13/Thu Aug 16 20:53:39 2001//
+/CHANGELOG/1.16/Tue Oct 23 04:16:12 2001//
+/vconfig.8/1.1/Sat Oct 20 22:57:02 2001//
+/vlan.html/1.19/Tue Oct 23 04:19:29 2001//
+/vlan_2.4.patch/1.14/Tue Oct 23 03:07:04 2001//

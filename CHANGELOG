@@ -1,6 +1,21 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            Oct 20, 2001
+Version:         1.5
+Kernel Version:  2.4.12-pre5
+Changes:
+                 Mostly added other peoples fixes and patches (thanks folks!)
+                 Finally fixed mc-list leakage (Ard van Breemen)
+                 Flush mc-list at vlan-destory (Ard van Breemen)
+                 Add vconfig man page to distribution (Ard van Breemen)
+                 Fix problem with /proc and renaming VLAN devices (af AT devcon D.T net)
+                 Add relatively large change by Nick Eggelston that makes VLAN
+                    devices more transparent to tools like tcpdump and other raw
+                    packet snoopers.  This will only be enabled when the REORDER_HDR
+                    flag is set.
+
+
 Date:            August 16, 2001
 Version:         1.4
 Kernel Version:  2.4.9-pre4

@@ -1,6 +1,6 @@
 diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if.h linux.dev/include/linux/if.h
---- linux/include/linux/if.h	Fri Aug 10 18:13:47 2001
-+++ linux.dev/include/linux/if.h	Thu Aug 16 10:09:14 2001
+--- linux/include/linux/if.h	Wed Oct 10 23:44:33 2001
++++ linux.dev/include/linux/if.h	Sat Oct 20 16:28:21 2001
 @@ -22,7 +22,7 @@
  #include <linux/types.h>		/* for "__kernel_caddr_t" et al	*/
  #include <linux/socket.h>		/* for "struct sockaddr" et al	*/
@@ -24,7 +24,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if.h linux.dev/in
   *	Device mapping structure. I'd just gone off and designed a 
 diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if_ether.h linux.dev/include/linux/if_ether.h
 --- linux/include/linux/if_ether.h	Thu Apr 19 08:38:50 2001
-+++ linux.dev/include/linux/if_ether.h	Wed Aug 15 22:25:03 2001
++++ linux.dev/include/linux/if_ether.h	Sat Oct 20 15:48:45 2001
 @@ -56,6 +56,7 @@
  #define ETH_P_RARP      0x8035		/* Reverse Addr Res packet	*/
  #define ETH_P_ATALK	0x809B		/* Appletalk DDP		*/
@@ -35,7 +35,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if_ether.h linux.
  #define ETH_P_PPP_DISC	0x8863		/* PPPoE discovery messages     */
 diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if_vlan.h linux.dev/include/linux/if_vlan.h
 --- linux/include/linux/if_vlan.h	Wed Dec 31 17:00:00 1969
-+++ linux.dev/include/linux/if_vlan.h	Thu Aug 16 10:41:56 2001
++++ linux.dev/include/linux/if_vlan.h	Sat Oct 20 16:35:47 2001
 @@ -0,0 +1,290 @@
 +/* -*- linux-c -*-
 + * VLAN		An implementation of 802.1Q VLAN tagging.
@@ -328,8 +328,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/include/linux/if_vlan.h linux.d
 +
 +#endif
 diff -u -r -N -X /home/greear/exclude.list linux/include/linux/netdevice.h linux.dev/include/linux/netdevice.h
---- linux/include/linux/netdevice.h	Thu Aug 16 13:40:02 2001
-+++ linux.dev/include/linux/netdevice.h	Thu Aug 16 10:09:14 2001
+--- linux/include/linux/netdevice.h	Wed Oct 10 23:44:52 2001
++++ linux.dev/include/linux/netdevice.h	Sat Oct 20 16:28:21 2001
 @@ -37,6 +37,7 @@
  #include <linux/config.h>
  #ifdef CONFIG_NET_PROFILE
@@ -388,7 +388,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/include/linux/netdevice.h linux
  	struct net_bridge_port	*br_port;
 diff -u -r -N -X /home/greear/exclude.list linux/include/linux/sockios.h linux.dev/include/linux/sockios.h
 --- linux/include/linux/sockios.h	Tue Jul 31 10:34:02 2001
-+++ linux.dev/include/linux/sockios.h	Thu Aug 16 10:09:08 2001
++++ linux.dev/include/linux/sockios.h	Sat Oct 20 15:48:45 2001
 @@ -102,6 +102,10 @@
  #define SIOCADDDLCI	0x8980		/* Create new DLCI device	*/
  #define SIOCDELDLCI	0x8981		/* Delete DLCI device		*/
@@ -402,7 +402,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/include/linux/sockios.h linux.d
  /*
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/Makefile linux.dev/net/8021q/Makefile
 --- linux/net/8021q/Makefile	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/Makefile	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/8021q/Makefile	Sat Oct 20 15:48:45 2001
 @@ -0,0 +1,19 @@
 +#
 +# Makefile for the Linux VLAN layer.
@@ -425,7 +425,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/Makefile linux.dev/ne
 +	tar -cvf /dev/f1 .
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/sysctl_net_vlan.c linux.dev/net/8021q/sysctl_net_vlan.c
 --- linux/net/8021q/sysctl_net_vlan.c	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/sysctl_net_vlan.c	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/8021q/sysctl_net_vlan.c	Sat Oct 20 15:48:45 2001
 @@ -0,0 +1,20 @@
 +/* 
 + * sysctl_net_vlan.c: sysctl interface to net Ethernet VLAN subsystem.
@@ -449,8 +449,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/sysctl_net_vlan.c lin
 +#endif
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/8021q/vlan.c
 --- linux/net/8021q/vlan.c	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/vlan.c	Thu Aug 16 10:25:17 2001
-@@ -0,0 +1,643 @@
++++ linux.dev/net/8021q/vlan.c	Sat Oct 20 15:48:45 2001
+@@ -0,0 +1,646 @@
 +/* -*- linux-c -*-
 + * INET		An implementation of the TCP/IP protocol suite for the LINUX
 + *		operating system.  INET is implemented using the  BSD Socket
@@ -463,6 +463,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/
 + * Authors:	Ben Greear <greearb@candelatech.com>, <greearb@agcs.com>
 + * 
 + * Fixes:
++ *              Fix for packet capture - Nick Eggleston <nick@dccinc.com>;
++ *
 + *
 + *		This program is free software; you can redistribute it and/or
 + *		modify it under the terms of the GNU General Public License
@@ -496,7 +498,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/
 +
 +static char vlan_fullname[] = "802.1Q VLAN Support";
 +static unsigned int vlan_version = 1;
-+static unsigned int vlan_release = 4;
++static unsigned int vlan_release = 5;
 +static char vlan_copyright[] = " Ben Greear <greearb@candelatech.com>";
 +
 +static int vlan_device_event(struct notifier_block *unused, unsigned long event, void *ptr);
@@ -511,7 +513,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/
 +/** These may be changed at run-time through IOCTLs */
 +unsigned short vlan_name_type = VLAN_NAME_TYPE_RAW_PLUS_VID_NO_PAD; /* determines interface naming scheme */
 +unsigned long vlan_bad_proto_recvd = 0; /* Counter for how many NON-VLAN protos we've received on a VLAN. */
-+
++unsigned short vlan_default_dev_flags = 1; /* DO reorder the header by default */
 +
 +static struct packet_type vlan_packet_type = 
 +{
@@ -844,6 +846,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/
 +
 +                                VLAN_DEV_INFO(new_dev)->real_dev = real_dev;
 +                                VLAN_DEV_INFO(new_dev)->dent = NULL;
++                                VLAN_DEV_INFO(new_dev)->flags = vlan_default_dev_flags;
 +
 +#ifdef VLAN_DEBUG
 +                                printk(VLAN_DBG "About to go find the group for idx: %i\n", real_dev->ifindex);
@@ -1096,7 +1099,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.c linux.dev/net/
 +
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.h linux.dev/net/8021q/vlan.h
 --- linux/net/8021q/vlan.h	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/vlan.h	Thu Aug 16 10:42:23 2001
++++ linux.dev/net/8021q/vlan.h	Sat Oct 20 17:54:14 2001
 @@ -0,0 +1,43 @@
 +#ifndef __BEN_VLAN_802_1Q_INC__
 +#define __BEN_VLAN_802_1Q_INC__
@@ -1143,8 +1146,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan.h linux.dev/net/
 +#endif
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/net/8021q/vlan_dev.c
 --- linux/net/8021q/vlan_dev.c	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/vlan_dev.c	Thu Aug 16 10:29:02 2001
-@@ -0,0 +1,778 @@
++++ linux.dev/net/8021q/vlan_dev.c	Sat Oct 20 18:39:12 2001
+@@ -0,0 +1,806 @@
 +/* -*- linux-c -*-
 + * INET		An implementation of the TCP/IP protocol suite for the LINUX
 + *		operating system.  INET is implemented using the  BSD Socket
@@ -1159,6 +1162,10 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 + * Fixes:       Mar 22 2001: Martin Bokaemper <mbokaemper@unispherenetworks.com>
 + *                - reset skb->pkt_type on incoming packets when MAC was changed
 + *                - see that changed MAC is saddr for outgoing packets
++ *              Oct 20, 2001:  Ard van Breeman:
++ *                - Fix MC-list, finally.
++ *                - Flush MC-list on VLAN destroy.
++ *                
 + *
 + *		This program is free software; you can redistribute it and/or
 + *		modify it under the terms of the GNU General Public License
@@ -1437,59 +1444,72 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +                         unsigned len) {
 +        struct vlan_hdr *vhdr;
 +        unsigned short veth_TCI = 0;
-+        int rc;
++        int rc = 0;
++        int build_vlan_header = 0;
 +        struct net_device* vdev = dev; /* save this for the bottom of the method */
 +        
 +#ifdef VLAN_DEBUG
 +        printk(VLAN_DBG __FUNCTION__ ": skb: %p type: %hx len: %x vlan_id: %hx, daddr: %p\n",
 +               skb, type, len, VLAN_DEV_INFO(dev)->vlan_id, daddr);
 +#endif
-+   
-+        vhdr = (struct vlan_hdr*)skb_push(skb, VLAN_HLEN);
-+
-+        /* build the four bytes that make this a VLAN header. */
-+
-+        /* Now, construct the second two bytes. This field looks something
-+         * like:
-+         * usr_priority: 3 bits  (high bits)
-+         * CFI           1 bit
-+         * VLAN ID       12 bits (low bits)
-+         *
++        
++        /* build vlan header only if re_order_header flag is NOT set.  This
++         * fixes some programs that get confused when they see a VLAN device
++         * sending a frame that is VLAN encoded (the consensus is that the VLAN
++         * device should look completely like an Ethernet device when the
++         * REORDER_HEADER flag is set)  The drawback to this is some extra 
++         * header shuffling in the hard_start_xmit.  Users can turn off this
++         * REORDER behaviour with the vconfig tool.
 +         */
-+        veth_TCI = VLAN_DEV_INFO(dev)->vlan_id;
-+        veth_TCI |= vlan_dev_get_egress_qos_mask(dev, skb);
++        build_vlan_header = ((VLAN_DEV_INFO(dev)->flags & 1) == 0);
++	
++	if (build_vlan_header) {
++                vhdr = (struct vlan_hdr*)skb_push(skb, VLAN_HLEN);
++
++                /* build the four bytes that make this a VLAN header. */
++
++                /* Now, construct the second two bytes. This field looks something
++                 * like:
++                 * usr_priority: 3 bits  (high bits)
++                 * CFI           1 bit
++                 * VLAN ID       12 bits (low bits)
++                 *
++                 */
++                veth_TCI = VLAN_DEV_INFO(dev)->vlan_id;
++                veth_TCI |= vlan_dev_get_egress_qos_mask(dev, skb);
 +   
-+        /* put_unaligned(htons(veth_TCI), &vhdr->h_vlan_TCI); */
-+        vhdr->h_vlan_TCI = htons(veth_TCI);
++                /* put_unaligned(htons(veth_TCI), &vhdr->h_vlan_TCI); */
++                vhdr->h_vlan_TCI = htons(veth_TCI);
 +
-+        /* 
-+         *  Set the protocol type.
-+         *  For a packet of type ETH_P_802_3 we put the length in here instead.
-+         *  It is up to the 802.2 layer to carry protocol information.
-+         */
++                /* 
++                 *  Set the protocol type.
++                 *  For a packet of type ETH_P_802_3 we put the length in here instead.
++                 *  It is up to the 802.2 layer to carry protocol information.
++                 */
 +
-+        if (type != ETH_P_802_3) {
-+                /* put_unaligned(htons(type), &vhdr->h_vlan_encapsulated_proto); */
-+                vhdr->h_vlan_encapsulated_proto = htons(type);
-+        }
-+        else {
-+                /* put_unaligned(htons(len), &vhdr->h_vlan_encapsulated_proto); */
-+                vhdr->h_vlan_encapsulated_proto = htons(len);
-+        }
++                if (type != ETH_P_802_3) {
++                        /* put_unaligned(htons(type), &vhdr->h_vlan_encapsulated_proto); */
++                        vhdr->h_vlan_encapsulated_proto = htons(type);
++                }
++                else {
++                        /* put_unaligned(htons(len), &vhdr->h_vlan_encapsulated_proto); */
++                        vhdr->h_vlan_encapsulated_proto = htons(len);
++                }
++        }/* If we're re-ordering the header */
 +
 +        /* Before delegating work to the lower layer, enter our MAC-address */
 +        if (saddr == NULL) {
 +                saddr = dev->dev_addr;
 +        }
-+
++        
 +        dev = VLAN_DEV_INFO(dev)->real_dev;
-+
++        
 +        /* MPLS can send us skbuffs w/out enough space.  This check will grow the
 +         * skb if it doesn't have enough headroom.  Not a beautiful solution, so
 +         * I'll tick a counter so that users can know it's happening...  If they
 +         * care...
 +         */
-+
++        
 +        /* NOTE:  This may still break if the underlying device is not the final
 +         * device (and thus there are more headers to add...)  It should work for
 +         * good-ole-ethernet though.
@@ -1508,15 +1528,25 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +                printk(VLAN_DBG __FUNCTION__ ": %s: had to grow skb.\n", vdev->name);
 +#endif
 +        }/* If we needed to grow the skb header room */
-+        
-+        /* Now make the underlying real hard header */        
-+        rc = dev->hard_header(skb, dev, ETH_P_8021Q, daddr, saddr, len + VLAN_HLEN);
 +
-+        if (rc > 0) {
-+                rc += VLAN_HLEN;
++        if (build_vlan_header) {
++                /* Now make the underlying real hard header */        
++                rc = dev->hard_header(skb, dev, ETH_P_8021Q, daddr, saddr, len + VLAN_HLEN);
++                
++                if (rc > 0) {
++                        rc += VLAN_HLEN;
++                }
++                else if (rc < 0) {
++                        rc -= VLAN_HLEN;
++                }
 +        }
-+        else if (rc < 0) {
-+                rc -= VLAN_HLEN;
++        else {
++                /* If here, then we'll just make a normal looking ethernet frame,
++                 * but, the hard_start_xmit method will insert the tag (it has to
++                 * be able to do this for bridged and other skbs that don't come
++                 * down the protocol stack in an orderly manner.
++                 */
++                rc = dev->hard_header(skb, dev, type, daddr, saddr, len);
 +        }
 +        
 +        return rc;
@@ -1635,6 +1665,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +void vlan_dev_destruct(struct net_device* dev) {
 +
 +        if (dev) {
++                vlan_flush_mc_list(dev);
 +                if (dev->priv) {
 +                        dev_put(VLAN_DEV_INFO(dev)->real_dev); /* release our reference */
 +
@@ -1834,7 +1865,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +                }
 +   
 +                /* looking for addresses to delete from master's list */
-+                for (dmi = vlan_dev->mc_list; dmi!=NULL; dmi=dmi->next) {
++                for (dmi = VLAN_DEV_INFO(vlan_dev)->old_mc_list; dmi!=NULL; dmi=dmi->next) {
 +                        if (vlan_should_add_mc(dmi, vlan_dev->mc_list)) {
 +                                /* if we think we should add it to the new list, then we should really
 +                                 * delete it from the real list on the underlying device.
@@ -1907,7 +1938,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +
 +        while (dmi) {
 +                dev_mc_delete(dev, dmi->dmi_addr, dmi->dmi_addrlen, 0);
-+                printk(KERN_INFO "%s: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from master interface\n",
++                printk(KERN_INFO "%s: del %.2x:%.2x:%.2x:%.2x:%.2x:%.2x mcast address from vlan interface\n",
 +                       dev->name,
 +                       dmi->dmi_addr[0],
 +                       dmi->dmi_addr[1],
@@ -1925,7 +1956,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlan_dev.c linux.dev/
 +}/* vlan_flush_mc_list */
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlanproc.c linux.dev/net/8021q/vlanproc.c
 --- linux/net/8021q/vlanproc.c	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/vlanproc.c	Thu Aug 16 11:08:02 2001
++++ linux.dev/net/8021q/vlanproc.c	Sat Oct 20 16:12:01 2001
 @@ -0,0 +1,521 @@
 +/* -*- linux-c -*-
 +******************************************************************************
@@ -2150,7 +2181,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlanproc.c linux.dev/
 +#endif
 +
 +	/** NOTE:  This will consume the memory pointed to by dent, it seems. */
-+	remove_proc_entry(vlandev->name, proc_vlan_dir);
++	remove_proc_entry(VLAN_DEV_INFO(vlandev)->dent->name, proc_vlan_dir);
 +	VLAN_DEV_INFO(vlandev)->dent = NULL;
 +
 +	return 0;
@@ -2450,7 +2481,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlanproc.c linux.dev/
 +#endif /* No CONFIG_PROC_FS */
 diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlanproc.h linux.dev/net/8021q/vlanproc.h
 --- linux/net/8021q/vlanproc.h	Wed Dec 31 17:00:00 1969
-+++ linux.dev/net/8021q/vlanproc.h	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/8021q/vlanproc.h	Sat Oct 20 15:48:45 2001
 @@ -0,0 +1,27 @@
 +
 +#ifndef __BEN_VLAN_PROC_INC__
@@ -2481,7 +2512,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/8021q/vlanproc.h linux.dev/
 +#endif
 diff -u -r -N -X /home/greear/exclude.list linux/net/Config.in linux.dev/net/Config.in
 --- linux/net/Config.in	Tue Mar  6 23:44:15 2001
-+++ linux.dev/net/Config.in	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/Config.in	Sat Oct 20 15:48:45 2001
 @@ -46,6 +46,9 @@
  	 tristate '    Multi-Protocol Over ATM (MPOA) support' CONFIG_ATM_MPOA
        fi
@@ -2494,7 +2525,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/Config.in linux.dev/net/Con
  comment ' '
 diff -u -r -N -X /home/greear/exclude.list linux/net/Makefile linux.dev/net/Makefile
 --- linux/net/Makefile	Mon Jun 11 19:15:27 2001
-+++ linux.dev/net/Makefile	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/Makefile	Sat Oct 20 15:48:45 2001
 @@ -45,6 +45,7 @@
  subdir-$(CONFIG_ATM)		+= atm
  subdir-$(CONFIG_DECNET)		+= decnet
@@ -2504,8 +2535,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/Makefile linux.dev/net/Make
  
  obj-y	:= socket.o $(join $(subdir-y), $(patsubst %,/%.o,$(notdir $(subdir-y))))
 diff -u -r -N -X /home/greear/exclude.list linux/net/core/dev.c linux.dev/net/core/dev.c
---- linux/net/core/dev.c	Tue Jul 31 10:34:02 2001
-+++ linux.dev/net/core/dev.c	Wed Aug 15 22:25:03 2001
+--- linux/net/core/dev.c	Mon Oct 22 20:04:26 2001
++++ linux.dev/net/core/dev.c	Sat Oct 20 15:48:45 2001
 @@ -1,4 +1,4 @@
 -/*
 +/* -*- linux-c -*-
@@ -2541,7 +2572,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/core/dev.c linux.dev/net/co
   *		0004	802.2
 diff -u -r -N -X /home/greear/exclude.list linux/net/ethernet/eth.c linux.dev/net/ethernet/eth.c
 --- linux/net/ethernet/eth.c	Fri Mar  2 12:02:15 2001
-+++ linux.dev/net/ethernet/eth.c	Wed Aug 15 22:25:03 2001
++++ linux.dev/net/ethernet/eth.c	Sat Oct 20 15:48:45 2001
 @@ -82,7 +82,7 @@
  	 *	in here instead. It is up to the 802.2 layer to carry protocol information.
  	 */
@@ -2598,7 +2629,7 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/ethernet/eth.c linux.dev/ne
  int eth_header_parse(struct sk_buff *skb, unsigned char *haddr)
 diff -u -r -N -X /home/greear/exclude.list linux/net/ipv4/af_inet.c linux.dev/net/ipv4/af_inet.c
 --- linux/net/ipv4/af_inet.c	Tue Aug  7 08:30:50 2001
-+++ linux.dev/net/ipv4/af_inet.c	Thu Aug 16 09:47:35 2001
++++ linux.dev/net/ipv4/af_inet.c	Sat Oct 20 15:48:45 2001
 @@ -143,6 +143,10 @@
  int (*br_ioctl_hook)(unsigned long);
  #endif
@@ -2630,8 +2661,8 @@ diff -u -r -N -X /home/greear/exclude.list linux/net/ipv4/af_inet.c linux.dev/ne
  			return -ENOPKG;
  
 diff -u -r -N -X /home/greear/exclude.list linux/net/netsyms.c linux.dev/net/netsyms.c
---- linux/net/netsyms.c	Tue Aug  7 08:30:50 2001
-+++ linux.dev/net/netsyms.c	Thu Aug 16 10:41:11 2001
+--- linux/net/netsyms.c	Tue Sep 18 13:39:51 2001
++++ linux.dev/net/netsyms.c	Sat Oct 20 15:48:45 2001
 @@ -30,6 +30,7 @@
  #include <net/pkt_sched.h>
  #include <net/scm.h>
