@@ -1,10 +1,25 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            December 31, 2000
+Version:         0.0.15
+Kernel Version:  2.2.18, 2.4.prerelease
+Status:          This one is pretty fresh..beware, especially the 2.4 patch.
+Changes:         
+
+		 Merged most of Matti Aarnio's patches. This means no significant patch
+                 to eth.c now, and will help port VLANs to non-ethernet devices
+                 (ie ppp, TokenRing??).
+
+                 Setting the MAC address should work now..I think it was broken before.
+
+                 Miscellaneous code re-organization to make patches to existing files smaller. 
+
+
 Date:            October 26, 2000
 Version:         0.0.14
 Kernel Version:  2.2.17, 2.4.pre9
-Status:          This one is pretty fresh..beware, especially the new features.
+Status:          Seems stable.
 Changes:         
 		 Removed vlan-space-per-machine, so vlan-space-per-NIC is mandatory now.
 
@@ -20,7 +35,7 @@ Changes:
 Date:            October 11, 2000
 Version:         0.0.13
 Kernel Version:  2.2.17, 2.4.pre9
-Status:          This one is pretty fresh..beware, especially the new features.
+Status:          BUSTED!!  Don't use it.
 Changes:         
 	        Added support for MULTICAST to the VLAN devices. Thanks to
 	        Gleb & Co for most of that code. 

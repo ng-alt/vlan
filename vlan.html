@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated Oct 26, 2000<br>
-Release:  0.0.14</br>
+Updated Dec 31, 2000<br>
+Release:  0.0.15</br>
 </i></center>
 <P>
 
@@ -43,9 +43,13 @@ Submit a bug/issue/enhancement with:  <a href="http://grok.yi.org:9001/IssueTrac
 Though I have no real VLAN hardware of my own, I hear that the code (2.2 kernel patches) has worked
 with these systems: <P>
 <ul>
-  <li> Cisco Catalyst, 3Com: {Corebuilder, Netbuilder II, SuperStack II switch 630}, Extreme Ntwks Summit 48,
+  <li> Cisco: {Catalyst}, 
+       3Com: {Corebuilder, Netbuilder II, SuperStack II switch 630},
+       Alpine: {3804(SMMi,F32Ti)}
+       Extreme Ntwks {Summit 48, 48i, 5i}
        Foundry: {ServerIronXL, FastIron}</li>
-  <li> Alteon ACENic Gigabit, 3Com 3c509, realtek RTL8029(AS), RTL8139, DEC DC21140 (tulip)
+  <li> Alteon ACENic Gigabit, 3Com 3c509, realtek RTL8029(AS), RTL8139, DEC DC21140 (tulip),
+       DFE-570TX quad-21143
   </li>
 </ul>
 <P>
@@ -55,7 +59,8 @@ At lease on my low end machines, on a 10bt network, the performance with VLAN v/
 ethernet devices seems very good.  One machine has only 16MB of RAM, so that is
 the limiting factor.  The file is a 17 MB binary, using ncftp to transport
 them from one machine to another.  Use these numbers for comparison only!
-Here are the numbers:<br>
+(Send me more numbers if you'd like...)
+Here are my numbers:<br>
 <b>Using VLAN interface:</b> 911 kBps<br>
 <b>Using Ethernet Interface:</b> 930 kBps</br>
 <P>
@@ -64,7 +69,7 @@ Here are the numbers:<br>
 <ul>
 <li> <a href="#setup"> VLAN Installation & Configuration info.</a></li>
 <li> <a href="#cvs_setup"> CVS Access.</a></li>
-<li> <a href="vlan/cisco_howto.html"> VLAN HOWTO (Some CISCO & 3COM specific info too.)</a></li>
+<li> <a href="vlan/cisco_howto.html"> VLAN HOWTO/FAQ (Some CISCO & 3COM specific info too.)</a></li>
 <li> <a target=_top href="http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm">
       http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm</a></li>
 <li> <a target=_top href="ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf">
@@ -79,13 +84,13 @@ Here are the numbers:<br>
  <li>Can support up to 4094 VLANs per ethernet interface.</li>
  <li>Scales well in critical paths: O(1), as far as I can tell.</li>
  <li>Hashed device lookup tables in the kernel, for better scalability in non-critical paths.</li>
- <li>Supports MULTICAST.</li>
+ <li>Supports MULTICAST (possible race condition on SMP)</li>
  <li>Can change MAC address of VLAN.</li>
  <li>Multiple naming conventions supported, and adjustable at runtime.</li>
  <li>Optional header-reordering, to make the VLAN interface look <b>JUST LIKE</b>
-     an Ethernet interface.  This fixes some problems with DHCPd.  You also have the
-     option to turn it off, which works for every other protocol I know about, and is
-     slightly faster.
+     an Ethernet interface.  This fixes some problems with DHCPd and anything else
+     that uses a SOCK_PACKET socket.  Default setting is off, which works for
+     every other protocol I know about, and is slightly faster.
  </li>
 </ul>
 <P>
@@ -93,11 +98,22 @@ Here are the numbers:<br>
 <center><b>Change Log</b></center>
 <ul>
 <P>
-<li> <b><a href="vlan/vlan.0.0.14.tar.gz">Release 0.0.14 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 26, 2000:</b><br>
-  <center><b>NOT WELL TESTED YET, use 0.0.12 if un-brave</b></center>
+<li> <b><a href="vlan/vlan.0.0.15.tar.gz">Release 0.0.15 (gz)</a> &nbsp; For Kernel: 2.2.18, 2.4.prerelease &nbsp; Dec 31, 2000:</b><br>
+  <center><b>NOT WELL TESTED YET, use 0.0.14 if un-brave</b></center>
   <P>
-  This code is probably still less stable than 0.0.12, but it should be a big improvement
-  over 0.0.13.
+  <ul>
+   <li>Merged most of Matti Aarnio's patches.  This means no significant patch to
+       eth.c now, and will help port VLANs to non-ethernet devices (ie ppp, TokenRing??).</li>
+   <li> Setting the MAC address should work now..I think it was broken before.</li>
+   <li> Miscellaneous code re-organization to make patches to existing files smaller.</li>
+  </ul>
+
+</li>
+
+<P>
+<li> <b><a href="vlan/vlan.0.0.14.tar.gz">Release 0.0.14 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 26, 2000:</b><br>
+  <P>
+  This code seems pretty stable.
   <ul>
    <li>Removed vlan-space-per-machine, so vlan-space-per-NIC is mandatory now.</li>
    <li>DHCP might work now, as I've added support for encapsulating regular ethernet
@@ -111,9 +127,8 @@ Here are the numbers:<br>
 
 <P>
 <li> <b><a href="vlan/vlan.0.0.13.tar.gz">Release 0.0.13 (gz)</a> &nbsp; For Kernel: 2.2.17, 2.4.pre9 &nbsp; Oct 11, 2000:</b><br>
-  <center><b>NOT WELL TESTED YET, use 0.0.12 if un-brave</b></center>
+  <center><b>KNOWN TO BE BUSTED, here for posterity's sake.</b></center>
   <P>
-  NOTE:  This is very broken...try 0.0.14 or 0.0.12 instead.
   <ul>
    <li>Added support for MULTICAST to the VLAN devices.  Thanks to
        <a href="http://vlan.sourceforge.net" target=_top>Gleb & Co</a> for most of
@@ -189,54 +204,6 @@ Usage: add             [interface-name] [vlan_id]
   updates!
 </li>
 <P>
-
-<li> <b><a href="vlan/vlan.0.0.10.tar.gz">Release 0.0.10 (gz)</a> &nbsp; For Kernel: 2.2.13/14, 2.3.47 &nbsp; February 26, 2000:</b><br>
-  Added support for PRIORITY.  The way it works is that the lower 3 bits of the skb->priority
-  are set into the PRIORITY field in the VLAN header.  No special handling is done with priority,
-  but it should be handled by other switches and such.  This has not been tested, but the default case
-  (no priority in the skb) seems to work at least.<P>
-  The big change is that you can now aggregate several ethernet ports in a single VLAN.  The
-  packets will be transmitted in a round robin fashion.  In order for this to work, you have
-  to change the MAC addresses on all cards to the same thing, and put the cards in promiscious
-  mode (because most drivers don't <u>really</u> honor the request to set the MAC all the way to
-  the NIC.  This works with two different speed NICs, but I think it will only be really useful
-  if they are the same speed.  Here is how I set them up in my test environment:
-  <pre>
-        ifdown eth1
-        ifconfig eth1 hw ether 00:40:05:41:00:5e  # This is the MAC of eth0
-        ifup eth1
-
-        ifconfig eth1 promisc
-
-        /usr/local/bin/vconfig add eth0 5
-        /usr/local/bin/vconfig add_port eth1 5
-        ifconfig vlan0005 192.168.2.1
-
-  On my other machine, I have this:
-        ifdown eth1
-        ifconfig eth1 hw ether 00:48:54:66:68:68  # This is the MAC of eth0
-        ifup eth1
-
-        ifconfig eth1 promisc
-
-        /usr/local/bin/vconfig add eth0 5
-        /usr/local/bin/vconfig add_port eth1 5
-        ifconfig vlan0005 192.168.2.3
-</pre>
-  Note that there are now two patches, one for the 2.2 series, and one for the 2.3 series.
-</li>
-
-<P>
-<li> <b><a href="vlan/vlan.0.0.9.tar.gz">Release 0.0.9 (gz)</a> &nbsp; For Kernel: 2.2.13/14+ &nbsp; February 6, 2000:</b><br>
-  Changed the way vlan names are created:  They now have the VID in the name.
-  You can revert to the old behavior by changing an #define in the 802_18/vlan.h
-  file.  Changed the destruction process for vlans.  Not sure if this fixed the
-  kernel lock problem I found while adding/removing VLAN devices, and also hacking
-  with DHCP, but the problem seemed to go away.
-  Added patch to dhcp to allow it to work with VLANs.  However, I don't grok
-  DHCP as well as might be desired, so use at your own risk!!
-  Added some debugging code (you have to compile it in if you need it)
-</li><P>
 
 </ul><hr>
 <P>
@@ -337,7 +304,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Thu Oct 26 22:16:23 MST 2000
+Last modified: Sun Dec 31 18:57:24 MST 2000
 <!-- hhmts end -->
   </body>
 </html>
