@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated March 24, 2002<br>
-Release:  1.6</br>
+Updated Fed 27, 2003<br>
+Release:  1.7</br>
 </i></center>
 <P>
 
@@ -27,18 +27,18 @@ Let us help you test your DSL, Cable Access, Satellite and other network systems
 </center>
 <font size = -1>
 <BR>
-TIP jar on <a href="http://scry.wanfear.com/~greear" target="_top"> my home page.</a><P>
+TIP jar on <a href="http://www.candelatech.com/~greear" target="_top"> my home page.</a><P>
 </font>
 
-Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
+Join the <a HREF="http://www.candelatech.com/mailman/listinfo/vlan">vlan mailing list</a>, 
  After that, to post, send mail to 
-<A HREF="mailto:vlan@scry.wanfear.com">vlan@scry.wanfear.com</a>.
+<A HREF="mailto:vlan@candelatech.com">vlan@candelatech.com</a>.
 <P>
 Submit a bug/issue/enhancement with the:  <a href="http://grok.yi.org/~greear/bugzilla/enter_bug.cgi?product=VLAN%20for%20Linux">VLAN Bugzilla</a></li>
 <P>
 
-Though I have no real VLAN hardware of my own, I hear that the 2.2/2.4 kernel patches have worked
-with these systems: <P>
+I hear that the 2.2/2.4 kernel patches have worked
+with these (and other, I'm sure) systems: <P>
 <ul>
   <li> Cisco: {Catalyst: 6509}, 
        3Com: {Corebuilder, Netbuilder II, SuperStack II switch 630},
@@ -59,13 +59,12 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <ul>
 <li> <a href="#setup"> VLAN Installation & Configuration info.</a></li>
 <li> <a href="#cvs_setup"> CVS Access.</a></li>
-<li> <a href="vlan/cisco_howto.html"> VLAN HOWTO/FAQ (Some CISCO & 3COM specific info too.)</a></li>
+<li> <a href="vlan/howto.html"> VLAN HOWTO/FAQ (Some CISCO & 3COM specific info too.)</a></li>
 <li> <a href="http://www.planetconnect.com/vlan/"> Another VLAN Recipe (Some info specific to Intel EEPRO Nics too.)</a></il>
-<li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan.html"> VLAN Research page in Japonese</a></li>
+<li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan.html"> VLAN Research page in Japanese</a></li>
 <li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan-e.html"> VLAN page translated to English</a></li>
-<li> <a target=_top href="http://standards.ieee.org/reading/ieee/std/lanman/802.1Q-1998.pdf">
+<li> <a target=_top href="http://standards.ieee.org/getieee802/download/802.1Q-1998.pdf">
       IEEE 802.1Q Standard</a></li>
-<li> <a target=_top href="http://vlan.sourceforge.net">Alternate VLAN implementation.</a></li>
 </ul>
 <P>
 
@@ -85,9 +84,26 @@ someone has done some sort of benchmark, I'll be happy to place it here!
  </li>
 </ul>
 <P>
+
+<hr>
+Download vconfig binaries (source is more flexible, but this will work for most people).
+<ul>
+  <li> <a href="vconfig">vconfig binary for x86</a></li>
+  <li> <a href="vconfig.arm">vconfig binary for StrongArm</a></li>
+</ul>
+<P>
+
 <hr>
 <center><b>Change Log</b></center>
 <ul>
+<P>
+<li> <b><a href="vlan/vlan.1.7.tar.gz">Release 1.7 (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; Feb 27, 2003:</b><br>
+  <P>
+  <ul>
+   <li>Clarified the license for vconfig (GPL).  Other small tweaks. </li>
+  </ul>
+</li>
+
 <P>
 <li> <b><a href="vlan/vlan.1.6.tar.gz">Release 1.6 (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; March 24, 2002:</b><br>
   <P>
@@ -386,7 +402,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Sun Mar 24 13:33:26 MST 2002
+Last modified: Thu Feb 27 22:23:45 PST 2003
 <!-- hhmts end -->
   </body>
 </html>

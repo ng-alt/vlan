@@ -4,9 +4,10 @@ D/tcpdump-3.4////
 /vlan_2.2.patch/1.7/Mon Jan 15 03:30:45 2001//
 D/contrib////
 /vlan_test.pl/1.4/Wed Aug  1 02:52:33 2001//
-/vconfig.c/1.5/Thu Aug 16 18:04:11 2001//
 /vconfig.8/1.1/Sat Oct 20 22:57:02 2001//
 /MakeInclude/1.7/Sat Feb  9 06:46:18 2002//
 /Makefile/1.5/Sat Feb  9 06:47:24 2002//
 /CHANGELOG/1.17/Sun Mar 24 20:26:07 2002//
-/vlan.html/1.21/Sun Mar 24 20:33:26 2002//
+/vconfig.c/1.6/Fri Jul 12 17:01:02 2002//
+/vconfig.spec/1.1/Thu Apr 18 00:11:42 2002//
+/vlan.html/1.22/Thu Apr 18 00:23:14 2002//

@@ -150,9 +150,9 @@ if ($ARGV[0] ne "clean") {
     `ip address add 192.168.$c.$c/24 dev vlan$i`;
     `ip link set dev vlan$i up`;
 
-    if (($i <= 4000) && (($i % 50) == 0)) {
-      #print "Doing ifconfig -a for $i devices.\n";
-      #`time -p ifconfig -a > /tmp/vlan_test_ifconfig_a_$i.txt`;
+    if (($i <= 4000) && (($i % 250) == 0)) {
+      print "Doing ifconfig -a for $i devices.\n";
+      `time -p ifconfig -a > /tmp/vlan_test_ifconfig_a_$i.txt`;
       print "Doing ip addr show for $i devices.\n";
       `time -p ip addr show > /tmp/vlan_test_ip_addr_$i.txt`;
     }
