@@ -19,8 +19,9 @@ vconfig.h: Makefile
 	touch vconfig.h
 
 
-${VCONFIG}: $(VLAN_OBJS)
+$(VCONFIG): $(VLAN_OBJS)
 	$(CC) $(CCFLAGS) $(LDFLAGS) -o $(VCONFIG) $(VLAN_OBJS) $(LDLIBS)
+	$(STRIP) $(VCONFIG)
 
 
 $(ALL_OBJS): %.o: %.c %.h

@@ -1,13 +1,12 @@
-/Makefile/1.4/Fri Oct 27 04:57:30 2000//
 /README/1.5/Mon Aug 28 02:53:05 2000//
 D/libpcap-0.4////
 D/tcpdump-3.4////
 /vlan_2.2.patch/1.7/Mon Jan 15 03:30:45 2001//
 D/contrib////
-/MakeInclude/1.6/Tue Jun 19 22:52:13 2001//
 /vlan_test.pl/1.4/Wed Aug  1 02:52:33 2001//
 /vconfig.c/1.5/Thu Aug 16 18:04:11 2001//
-/CHANGELOG/1.16/Tue Oct 23 04:16:12 2001//
 /vconfig.8/1.1/Sat Oct 20 22:57:02 2001//
-/vlan.html/1.19/Tue Oct 23 04:19:29 2001//
-/vlan_2.4.patch/1.14/Tue Oct 23 03:07:04 2001//
+/MakeInclude/1.7/Sat Feb  9 06:46:18 2002//
+/Makefile/1.5/Sat Feb  9 06:47:24 2002//
+/CHANGELOG/1.17/Sun Mar 24 20:26:07 2002//
+/vlan.html/1.21/Sun Mar 24 20:33:26 2002//

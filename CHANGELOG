@@ -1,5 +1,15 @@
 This file should be prepended to each time a release is made.
 
+Date:            March 24, 2002
+Version:         1.6
+Kernel Version:  2.4.14+
+Changes:         Removed 2.4 kernel patch from VLAN distribution..it's now in the
+                 standard linux kernel.  Other updates include vconfig changes
+                 to fix some compile problems, and to enable cross-compiling to
+                 ARM (this assumes you are using the Intrinsyc cross-compiler in
+                 it's standard location).
+
+
 
 Date:            Oct 20, 2001
 Version:         1.5

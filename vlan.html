@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated October 22, 2001<br>
-Release:  1.5</br>
+Updated March 24, 2002<br>
+Release:  1.6</br>
 </i></center>
 <P>
 
@@ -60,6 +60,7 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <li> <a href="#setup"> VLAN Installation & Configuration info.</a></li>
 <li> <a href="#cvs_setup"> CVS Access.</a></li>
 <li> <a href="vlan/cisco_howto.html"> VLAN HOWTO/FAQ (Some CISCO & 3COM specific info too.)</a></li>
+<li> <a href="http://www.planetconnect.com/vlan/"> Another VLAN Recipe (Some info specific to Intel EEPRO Nics too.)</a></il>
 <li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan.html"> VLAN Research page in Japonese</a></li>
 <li> <a href="http://www.geocities.co.jp/AnimeComic-White/6586/vlan-e.html"> VLAN page translated to English</a></li>
 <li> <a target=_top href="http://standards.ieee.org/reading/ieee/std/lanman/802.1Q-1998.pdf">
@@ -88,6 +89,17 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.6.tar.gz">Release 1.6 (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; March 24, 2002:</b><br>
+  <P>
+  <ul>
+   <li>Removed 2.4 kernel patch:  It's in the standard kernel now.</li>
+   <li>Updated vconfig to fix some compile issues, and enable cross-compilation
+       to the StrongARM platform (changes should help other cross-compile
+       attempts too.)</li>
+  </ul>
+</li>
+<P>
+
 <li> <b><a href="vlan/vlan.1.5.tar.gz">Release 1.5 (gz)</a> &nbsp; For Kernel: 2.4.12-pre5 &nbsp; October 22, 2001:</b><br>
   <P>
   <ul>
@@ -276,9 +288,9 @@ Usage: add             [interface-name] [vlan_id]
 <center><h3>
 <a name="setup">VLAN Setup and Configuration</a></h3></center>
 
-To get started, you will want to download the <a href=vlan.tar.gz>vlan.tar.gz</a>
+To get started, you will want to download the latest vlan.X.X.tar.gz
 file (to your $HOME directory.) Unpack it with your favorite commands, for
-example:  <tt> tar -xvzf vlan.tar.gz </tt>
+example:  <tt> tar -xvzf vlan.1.6.tar.gz </tt>
 <a name="cvs_setup">Alternatively, you can get it from the CVS Repository using something like this:</a><br>
 <ol>
       <li> Install and configure 
@@ -296,14 +308,15 @@ example:  <tt> tar -xvzf vlan.tar.gz </tt>
 </ol>
 <P>
 
-Now, you should have a vlan directory in your home directory.  Now,
+Now, you should have a vlan directory in your home directory.  You only have
+to patch the kernel if you are using Linux 2.4.14 or earlier.  Now,
 read the README or other docs to figure out what kernel it patches against.
 A list of mirrors are kept at <a href=http://www.kernel.org>www.kernel.org</a>.
 Unzip and un-tar this in your home directory as well, which should
 create a linux directory in your $HOME directory.  Example:<tt>
 tar -xvzf linux-2.2.14.tar.gz</tt><P>
 
-Now add the VLAN kernel changes to the kernel.  I finally figured
+Now add the VLAN kernel changes to the kernel if your kernel requires it.  I finally figured
 out how to do patches that diff can handle (I think I did it right at least!).  You
 will find the patch in the vlan directory.  It will be called:  vlan.patch,
 or something equally straight-foward. Apply the patch to your kernel:<p>
@@ -373,7 +386,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Mon Oct 22 21:19:29 MST 2001
+Last modified: Sun Mar 24 13:33:26 MST 2002
 <!-- hhmts end -->
   </body>
 </html>
