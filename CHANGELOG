@@ -1,0 +1,161 @@
+This file should be prepended to each time a release is made.
+
+
+Date:            April 23, 2000
+Version:         0.0.11
+Kernel Version:  2.2.13 & 2.2.14, 2.3.99
+Status:          Added several new features in the critical path...beware!
+Changes:         
+		 Added real support for PRIORITY.  Through IOCTL calls (see the
+		 vconfig program), you can set explicit ingress and egress mappings
+		 to/from the VLAN QOS bits and the sk_buff->priority field.  This
+		 is not tested very well, as I don't know much about how people really
+		 use the priority field...  Took out the round-robin aggretation that
+		 went in in rls 0.10, as it was mainly just a hack, and doing link
+		 aggregation at a lower level and then putting VLAN on top of that
+		 virtual device probably makes more sense.  The vconfig program
+		 changed to support the new features..here's it's new usage:<br>
+
+	Usage: add             [interface-name] [vlan_id]
+	       rem             [vlan-name]
+	       set_dflt        [interface-name] [vlan_id]
+	       add_port        [port-name]      [vlan_id]
+	       rem_port        [port-name]      [vlan_id]
+	       set_egress_map  [vlan-name]      [skb_priority]   [vlan_qos]
+	       set_ingress_map [vlan-name]      [skb_priority]   [vlan_qos]
+	       set_name_type   [name-type]
+	       set_bind_mode   [bind-type]
+
+	* The [interface-name] is the name of the ethernet card that hosts
+	  the VLAN you are talking about.
+	* The port-name is the name of the physical interface that a VLAN
+	  may be attached to.
+	* The vlan_id is the identifier (0-4095) of the VLAN you are operating on.
+	* skb_priority is the priority in the socket buffer (sk_buff).
+	* vlan_qos is the 3 bit priority in the VLAN header
+	* name-type:  VLAN_PLUS_VID (vlan0005), VLAN_PLUS_VID_NO_PAD (vlan5),
+	              DEV_PLUS_VID (eth0.0005), DEV_PLUS_VID_NO_PAD (eth0.5)
+	* bind-type:  PER_DEVICE  # Allows vlan 5 on eth0 and eth1 to be unique.
+	              PER_KERNEL  # Forces vlan 5 to be unique across all devices.
+
+ 		 The 2.3 patches have been ported foward to 2.3.99, thanks to
+		 Patrick for the vlanproc.c updates!
+
+
+
+Date:            February 26, 2000
+Version:         0.0.10
+Kernel Version:  2.2.13 & 2.2.14, 2.3.47
+Status:          Added several new features in the critical path...beware!
+Changes:         
+  		 Added support for PRIORITY.  The way it works is that the lower
+		 3 bits of the skb->priority are set into the PRIORITY field in
+		 the VLAN header.  No special handling is done with priority,
+ 		 but it should be handled by other switches and such.  This has
+		 not been tested, but the default case (no priority in the skb)
+		 seems to work at least.
+
+ 		 The big change is that you can now aggregate several ethernet
+		 ports in a single VLAN.  The packets will be transmitted in a
+		 round robin fashion.  In order for this to work, you have
+		 to change the MAC addresses on all cards to the same thing,
+		 and put the cards in promiscious mode (because most drivers don't
+		 __really__ honor the request to set the MAC all the way to
+ 		 the NIC.  This works with two different speed NICs, but I think
+		 it will only be really useful if they are the same speed.  Here
+		 is how I set them up in my test environment:
+
+	        ifdown eth1
+	        ifconfig eth1 hw ether 00:40:05:41:00:5e  # This is the MAC of eth0
+	        ifup eth1
+	
+	        ifconfig eth1 promisc
+
+	        /usr/local/bin/vconfig add eth0 5
+	        /usr/local/bin/vconfig add_port eth1 5
+	        ifconfig vlan0005 192.168.2.1
+
+	  On my other machine, I have this:
+	        ifdown eth1
+	        ifconfig eth1 hw ether 00:48:54:66:68:68  # This is the MAC of eth0
+	        ifup eth1
+
+	        ifconfig eth1 promisc
+
+	        /usr/local/bin/vconfig add eth0 5
+	        /usr/local/bin/vconfig add_port eth1 5
+	        ifconfig vlan0005 192.168.2.3
+
+		 Note that there are now two patches, one for the 2.2 series,
+		 and one for the 2.3 series.
+
+
+Date:            February 6, 2000
+Version:         0.0.9
+Kernel Version:  2.2.13 & 2.2.14
+Status:          Mostly solid.  May be issues with adding/removing, but it
+                 works at least most of the time.
+Changes:         Changed the way vlan names are created:  They now have the
+                 VID in the name.  You can revert to the old behavior by
+                 changing an #define in the 802_18/vlan.h file.  Changed
+                 the destruction process for vlans.  Not sure if this fixed the
+  		 kernel lock problem I found while adding/removing VLAN devices,
+                 and also hacking with DHCP, but the problem seemed to go away.
+		 Added patch to dhcp to allow it to work with VLANs.  However,
+                 I don't grok DHCP as well as might be desired, so use at your
+                 own risk!!  Added some debugging code (you have to compile
+                 it in if you need it)
+		 
+
+Date:            December 22, 1999
+Version:         0.0.8
+Kernel Version:  2.2.13+
+Status:          ARP seems to fail in certain cases (but not on my machines.)
+Changes:         Fixed compile warnings and a linking problem due to #ifdef's.
+		 No major changes in functionality or performance.
+
+Date:            December 5, 1999
+Version:         0.0.7
+Kernel Version:  2.2.13+
+Status:          ARP seems to fail in certain cases (but not on my machines.)
+		 Several (many?) ethernet drivers can't handle the extra 4 bytes
+		 of VLAN, so the MTU on the network may have to be set to 1496,
+		 or fix the ethernet drivers!!
+Changes:         Re-wrote the /proc code to never go above 4k buffers.  This means
+		 that each port now has it's own file entry.  Fixed crash bug with
+		 removing VLAN devices.  Byte and pkt counters are now updated correctly,
+		 and are found in the /proc/net/vlan/<device> file.
+
+
+Date:            October 20, 1999
+Version:         0.0.6
+Kernel Version:  2.2.10+
+Status:          ping -f still kills one of my machines, but it takes longer...and I'm
+		 not sure if its the fault of the VLAN code, or maybe some hardware problem.
+Changes:         Coded around an extraneous skb alloc/free so that there should be no
+                 extra buffer copying as compared to an ethernet interface, unless the
+		 vlan device spans more than one interface.  Put #ifdef around all printk
+		 debugging calls, at least for non-control code (ie no more printk in the
+		 critical paths.)
+
+
+Date:            October 19, 1999
+Version:         0.0.6
+Kernel Version:  2.2.10
+Status:          Ping & FTP work, ping -f kills it after some time...not sure why yet.
+Changes:         Got tcpdump working with VLAN pkts (use the -e option).  Got basic VLAN
+		 functionality working, though problems remain, including a KERNEL CRASH
+		 that can be induced by ping -f on one of the vlan interfaces.  My test
+		 setup consists of two linux boxes, each running my modified kernel.
+		 Since I have no third-party implementation to test against, it is likely
+		 the code is not too right yet!!
+		 Performance isn't all that great:  Running a Cyrix 155 <-> a Cyrix 233,
+		 connected through a 10bt hub, I get 910 Mbps on regular ethernet,
+		 and only 650 Mbps on the VLAN device.  This was using a 30 MB file.
+
+
+Date:            Long time ago.
+Version:         0.0.3
+Kernel Version:  2.2.2
+Status:          Definately broken, but lots of code in there!!
+Changes:         Initial partially functional release (not very functional.)

@@ -1,0 +1,290 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>802.1Q VLAN implementation for Linux</title>
+  </head>
+
+  <body bgcolor=#ffffff text=#000000>
+    <h1><center>802.1Q VLAN implementation for Linux</center></h1>
+
+<center><i>
+Updated April 23, 2000<br>
+Release:  0.0.11</br>
+</i></center>
+<P>
+
+This code should be considered <b>BETA</b>.  MTU problems exist for
+many ethernet drivers, and people have reported ARP problems, though
+it works at least some of the time.  Other than that, things seem
+fairly stable!
+<P>
+
+<BR>Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing list</a>, 
+ After that, to post, send mail to 
+<A HREF="mailto:vlan@scry.wanfear.com">vlan@scry.wanfear.com</a>.
+<P>
+Though I have no real VLAN hardware of my own, I hear that the code (2.2 kernel patches) has worked
+with these systems: <P>
+<ul>
+  <li> Cisco Catalyst, 3Com Corebuilder, Netbuilder II </li>
+  <li> Alteon ACENic Gigabit, 3Com 3c509, realtek RTL8029(AS), RTL8139, DEC DC21140 (tulip)
+  </li>
+</ul>
+<P>
+
+<u><b>Performance:</b></u>
+At lease on my low end machines, on a 10bt network, the performance with VLAN v/s
+ethernet devices seems very good.  One machine has only 16MB of RAM, so that is
+the limiting factor.  The file is a 17 MB binary, using ncftp to transport
+them from one machine to another.  Use these numbers for comparison only!
+Here are the numbers:<br>
+<b>Using VLAN interface:</b> 911 kBps<br>
+<b>Using Ethernet Interface:</b> 930 kBps</br>
+<P>
+
+<b><center>Other VLAN related Resources.</center></b>
+<ul>
+<li> <a target=_top href="http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm">
+      http://www.netlab.ohio-state.edu/~jain/refs/lsw_refs.htm</a></li>
+<li> <a target=_top href="ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf">
+      ftp://p8021:-go_wildcats@p8021.hep.net/8021/q-drafts/d11/q-d11.pdf</a></li>
+<li> <a target=_top href="http://vlan.sourceforge.net">Alternate VLAN implementation.</a></li>
+</ul>
+<P>
+
+<hr>
+<center><b>Change Log</b></center>
+<ul>
+<P>
+<li> <b><a href="vlan/vlan.0.0.11.tar.gz">Release 0.0.11 (gz)</a> &nbsp; For Kernel: 2.2.13/14, 2.3.99 &nbsp; April 23, 2000:</b><br>
+  Added real support for PRIORITY.  Through IOCTL calls (see the vconfig program), you can set
+  explicit ingress and egress mappings to/from the VLAN QOS bits and the sk_buff->priority
+  field.  This is not tested very well, as I don't know much about how people really use the
+  priority field...  Took out the round-robin aggretation that went in in rls 0.10, as it was
+  mainly just a hack, and doing link aggregation at a lower level and then putting VLAN on
+  top of that virtual device probably makes more sense.  The vconfig program changed to support
+  the new features..here's it's new usage:<br>
+<pre>
+Usage: add             [interface-name] [vlan_id]
+       rem             [vlan-name]
+       set_dflt        [interface-name] [vlan_id]
+       add_port        [port-name]      [vlan_id]
+       rem_port        [port-name]      [vlan_id]
+       set_egress_map  [vlan-name]      [skb_priority]   [vlan_qos]
+       set_ingress_map [vlan-name]      [skb_priority]   [vlan_qos]
+       set_name_type   [name-type]
+       set_bind_mode   [bind-type]
+
+* The [interface-name] is the name of the ethernet card that hosts
+  the VLAN you are talking about.
+* The port-name is the name of the physical interface that a VLAN
+  may be attached to.
+* The vlan_id is the identifier (0-4095) of the VLAN you are operating on.
+* skb_priority is the priority in the socket buffer (sk_buff).
+* vlan_qos is the 3 bit priority in the VLAN header
+* name-type:  VLAN_PLUS_VID (vlan0005), VLAN_PLUS_VID_NO_PAD (vlan5),
+              DEV_PLUS_VID (eth0.0005), DEV_PLUS_VID_NO_PAD (eth0.5)
+* bind-type:  PER_DEVICE  # Allows vlan 5 on eth0 and eth1 to be unique.
+              PER_KERNEL  # Forces vlan 5 to be unique across all devices.
+</pre>
+<P>
+  The 2.3 patches have been ported foward to 2.3.99, thanks to Patrick for the vlanproc.c
+  updates!
+</li>
+<P>
+
+<li> <b><a href="vlan/vlan.0.0.10.tar.gz">Release 0.0.10 (gz)</a> &nbsp; For Kernel: 2.2.13/14, 2.3.47 &nbsp; February 26, 2000:</b><br>
+  Added support for PRIORITY.  The way it works is that the lower 3 bits of the skb->priority
+  are set into the PRIORITY field in the VLAN header.  No special handling is done with priority,
+  but it should be handled by other switches and such.  This has not been tested, but the default case
+  (no priority in the skb) seems to work at least.<P>
+  The big change is that you can now aggregate several ethernet ports in a single VLAN.  The
+  packets will be transmitted in a round robin fashion.  In order for this to work, you have
+  to change the MAC addresses on all cards to the same thing, and put the cards in promiscious
+  mode (because most drivers don't <u>really</u> honor the request to set the MAC all the way to
+  the NIC.  This works with two different speed NICs, but I think it will only be really useful
+  if they are the same speed.  Here is how I set them up in my test environment:
+  <pre>
+        ifdown eth1
+        ifconfig eth1 hw ether 00:40:05:41:00:5e  # This is the MAC of eth0
+        ifup eth1
+
+        ifconfig eth1 promisc
+
+        /usr/local/bin/vconfig add eth0 5
+        /usr/local/bin/vconfig add_port eth1 5
+        ifconfig vlan0005 192.168.2.1
+
+  On my other machine, I have this:
+        ifdown eth1
+        ifconfig eth1 hw ether 00:48:54:66:68:68  # This is the MAC of eth0
+        ifup eth1
+
+        ifconfig eth1 promisc
+
+        /usr/local/bin/vconfig add eth0 5
+        /usr/local/bin/vconfig add_port eth1 5
+        ifconfig vlan0005 192.168.2.3
+</pre>
+  Note that there are now two patches, one for the 2.2 series, and one for the 2.3 series.
+</li>
+
+<P>
+<li> <b><a href="vlan/vlan.0.0.9.tar.gz">Release 0.0.9 (gz)</a> &nbsp; For Kernel: 2.2.13/14+ &nbsp; February 6, 2000:</b><br>
+  Changed the way vlan names are created:  They now have the VID in the name.
+  You can revert to the old behavior by changing an #define in the 802_18/vlan.h
+  file.  Changed the destruction process for vlans.  Not sure if this fixed the
+  kernel lock problem I found while adding/removing VLAN devices, and also hacking
+  with DHCP, but the problem seemed to go away.
+  Added patch to dhcp to allow it to work with VLANs.  However, I don't grok
+  DHCP as well as might be desired, so use at your own risk!!
+  Added some debugging code (you have to compile it in if you need it)
+</li><P>
+
+<li> <b><a href="vlan/vlan.0.0.8.tar.gz">Release 0.0.8 (gz)</a> &nbsp; For Kernel: 2.2.13+ &nbsp; December 22, 1999:</b><br>
+  Fixed #ifdef problem that caused symbols to not be compiled or found.
+  Fixed minor warning.  If it compiled for you last time, nothing worth
+  having in this load I think.
+</li><P>
+
+<li> <b><a href="vlan/vlan.0.0.7.tar.gz">Release 0.0.7 (gz)</a> &nbsp; For Kernel: 2.2.10+ &nbsp; December 5, 1999:</b><br>
+  Re-wrote the /proc code to never go above 4k buffers.  This means
+  that each port now has it's own file entry.  Fixed crash bug with
+  removing VLAN devices.  Byte and pkt counters are now updated correctly,
+  and are found in the /proc/net/vlan/&lt;device> file.
+</li><P>
+
+<li> <b><a href="vlan/vlan.0.0.6.tar.gz">Release 0.0.6 (gz)</a> &nbsp; For Kernel: 2.2.10+ &nbsp; October 20, 1999:</b><br>
+ Coded around an extraneous skb alloc/free so that there should be no
+ extra buffer copying as compared to an ethernet interface, unless the
+ vlan device spans more than one interface.  Put #ifdef around all printk
+ debugging calls, at least for non-control code (ie no more printk in the
+ critical paths.)
+</li>
+
+<P>
+<li> <b><a href="vlan/vlan.0.0.5.tar.gz">Release 0.0.5 (gz)</a> &nbsp; For Kernel: 2.2.10 &nbsp; October 19, 1999:</b><br>
+  Got tcpdump working with VLAN pkts (use the -e option).  Got basic VLAN
+  functionality working, though problems remain, including a KERNEL CRASH
+  that can be induced by ping -f on one of the vlan interfaces.  My test
+  setup consists of two linux boxes, each running my modified kernel.
+  Since I have no third-party implementation to test against, it is likely
+  the code is not too right yet!!
+  Performance isn't all that great:  Running a Cyrix 155 &lt;-> a Cyrix 233,
+  connected through a 10bt hub, I get 910 Mbps on regular ethernet,
+  and only 650 Mbps on the VLAN device.  This was using a 30 MB file.
+</li>
+<P>
+<li> <b>Release 0.0.4 &mbsp; Spetember 27, 1999:</b><br>
+     Little or no new code changes, but it is now in CVS.  I'll be
+     working on getting the bugs out of the setup...
+</li>
+<P>
+<li> <b>Release 0.0.3 &nbsp; March 29, 1999:</b><br>
+     Modified the VLAN code to be a protocol, instead of
+     an unsightly hack into the ethernet code.  Modified vconfig to be
+     more useful, and got rid of all the l2switch stuff (too specialized,
+     and too inflexible.)</li>
+</ul><hr>
+<P>
+
+
+To get started, you will want to download the <a href=vlan.tar.gz>vlan.tar.gz</a>
+file (to your $HOME directory.) Unpack it with your favorite commands, for
+example:  <tt> tar -xvzf vlan.tar.gz </tt>
+Alternatively, you can get it from the CVS Repository using something like this:<br>
+<ol>
+      <li> Install and configure 
+	<a href="http://www.loria.fr/~molli/cvs-index.html">cvs</a>
+	  on your machine.</li>
+	<li> Specify the vlan repository:<br>
+	<b>export CVSROOT=:pserver:anonymous@scry.wanfear.com:/home/cvs/vlan</b>
+	</li>
+	<li> Log in to the repository:<br>
+	<b>cvs login &nbsp; &nbsp; (PASSWORD: anonymous)</b>
+	</li>
+	<li> Check out the source:<br>
+	  <b> mkdir vlan; cd vlan; cvs -z3 checkout vlan</b>
+	</li>
+</ol>
+<P>
+
+Now, you should have a vlan directory in your home directory.  Now,
+read the README or other docs to figure out what kernel it patches against.
+A list of mirrors are kept at <a href=http://www.kernel.org>www.kernel.org</a>.
+Unzip and un-tar this in your home directory as well, which should
+create a linux directory in your $HOME directory.  Example:<tt>
+tar -xvzf linux-2.2.14.tar.gz</tt><P>
+
+Now add the VLAN kernel changes to the kernel.  I finally figured
+out how to do patches that diff can handle (I think I did it right at least!).  You
+will find the patch in the vlan directory.  It will be called:  vlan.patch,
+or something equally straight-foward. Apply the patch to your kernel:<p>
+
+NOTE: pick the correct patch for your kernel series.  The 2.3 kernel is very
+unstable at this point.
+<P>
+
+<tt>cd $HOME/linux<br>
+patch -p 1 &lt; $HOME/vlan/[vlan.patch]</br>
+</tt>
+<P>
+
+Now, build the vconfig program in the $HOME/vlan directory:<br>
+<tt>cd $HOME/vlan<br>
+make<br>
+</tt>
+<P>
+
+
+Now, time to compile your new kernel!  Use the <tt>make xconfig</tt>
+command in your $HOME/linux directory to select your kernel options.  The
+option related to 802.1Q VLANs is found under the <b>Networking options</b>.
+<P>
+
+Assuming your kernel compiled cleanly (yell if it didn't and you think my
+code broke it!!), you are now ready to try it out!!  Install your kernel
+in the normal manner (fix up your <tt>/etc/lilo.conf</tt> file appropriately and
+run <tt>lilo</tt> as root.)  Reboot your computer and choose your new kernel.
+<P>
+As your computer comes back to life, there will be little sign that you are
+now 802.1Q capable, other than two lines spit out during the boot process.
+There should be a config programs in your $HOME/vlan
+directory:  <tt>vconfig</tt>.  <b>vconfig</b> is used
+to create and destroy VLAN devices. So, lets create a VLAN device on your
+first ethernet NIC.  vconfig&lt;return> will list a short spiel on how to
+use it.  The command I usually use is:
+<P>
+
+<tt>vconfig add eth0 5</tt>
+<P>
+
+This attempts to create a VLAN device with VLAN-ID of 5 on the eth0 device.
+If you want to delete a VLAN, use something like:
+<P>
+<tt>vconfig rem vlan0005</tt>
+<P>
+
+You will also need to give it an ip, eg: <tt>ifconfig -i vlan0005 192.168.2.1</tt><br>
+and configure it UP:  <tt>ifconfig -i vlan0005 up</tt>
+<P>
+
+<b>NOTE:</b>  it's hard to tell what a VLAN's ID is just by looking at it's
+listing that you get from: <tt>ifconfig -a</tt>.  You can get more information
+if you look at the <b>/proc/net/vlan/*</b> files:
+<P>
+<tt> cat /proc/net/vlan/config</tt>
+<P>
+
+Please get in contact with me if you have suggestions, patches, or other
+comments.
+<P>
+
+    <hr>
+    <address><a href="mailto:greearb@candelatech.com">greearb@candelatech.com</a></address>
+<!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
+<!-- hhmts start -->
+Last modified: Sun Apr 23 13:48:48 MST 2000
+<!-- hhmts end -->
+  </body>
+</html>

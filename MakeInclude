@@ -1,0 +1,27 @@
+#  -*-Makefile-*-
+
+
+#  This is the version of the make utility you wish to use.
+#  On some systems (BSD?) you might want this to be gmake.
+#MAKE=gmake
+MAKE=make
+
+
+###################################################
+#  Normally won't have to configure under here...
+###################################################
+
+VERSION=0.0.7
+
+CUR_DATE=`date '+%y.%m.%d'`
+
+# NOTE:  Use these variables if you are using EGCS
+
+CCFLAGS = -g -D_GNU_SOURCE -fguiding-decls -Wall -I${HOME}/linux/include
+LDLIBS =  -lm -lstring2 -lbitfield -lcrypt #-lnsl # -lsocket
+
+
+#  Other compilers may work, but I haven't tested with them.
+#  I don't suppose it could hurt to try though!
+CC = g++       # this is generally the c compiler, unused AFAIK
+CCC = g++      # this is generally the c++ compiler
