@@ -8,13 +8,12 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated Dec 31, 2000<br>
-Release:  0.0.15</br>
+Updated April 16, 2001<br>
+Release:  1.0.1</br>
 </i></center>
 <P>
 
-This code should be considered <b>BETA</b>.  MTU problems exist for
-many ethernet drivers.  Other than that, things seem fairly stable!
+MTU problems exist for many ethernet drivers.  Other than that, things seem fairly stable!
 <P>
 
 <center>
@@ -39,7 +38,7 @@ Join the <a HREF="http://www.WANfear.com/mailman/listinfo/vlan">vlan mailing lis
 Submit a bug/issue/enhancement with the:  <a href="http://grok.yi.org/~greear/bugzilla/enter_bug.cgi?product=VLAN%20for%20Linux">VLAN Bugzilla</a></li>
 <P>
 
-Though I have no real VLAN hardware of my own, I hear that the code (2.2 kernel patches) has worked
+Though I have no real VLAN hardware of my own, I hear that the 2.2/2.4 kernel patches have worked
 with these systems: <P>
 <ul>
   <li> Cisco: {Catalyst: 6509}, 
@@ -54,15 +53,8 @@ with these systems: <P>
 <P>
 
 <u><b>Performance:</b></u>
-At lease on my low end machines, on a 10bt network, the performance with VLAN v/s
-ethernet devices seems very good.  One machine has only 16MB of RAM, so that is
-the limiting factor.  The file is a 17 MB binary, using ncftp to transport
-them from one machine to another.  Use these numbers for comparison only!
-(Send me more numbers if you'd like...)
-Here are my numbers:<br>
-<b>Using VLAN interface:</b> 911 kBps<br>
-<b>Using Ethernet Interface:</b> 930 kBps</br>
-<P>
+The difference in running traffic over VLANs v/s regular ethernet is very slight.  If
+someone has done some sort of benchmark, I'll be happy to place it here!
 
 <b><center>VLAN related Resources.</center></b>
 <ul>
@@ -81,8 +73,8 @@ Here are my numbers:<br>
 <ul>
  <li>Implements 802.1Q VLAN spec.</li>
  <li>Can support up to 4094 VLANs per ethernet interface.</li>
- <li>Scales well in critical paths: O(1), as far as I can tell.</li>
- <li>Hashed device lookup tables in the kernel, for better scalability in non-critical paths.</li>
+ <li>Scales well in critical paths: O(n), where n is the number of PHYSICAL ethernet interfaces,
+     and that is only on ingress.  O(1) in every other critical path, as far as I know.</li>
  <li>Supports MULTICAST</li>
  <li>Can change MAC address of VLAN.</li>
  <li>Multiple naming conventions supported, and adjustable at runtime.</li>
@@ -97,8 +89,21 @@ Here are my numbers:<br>
 <center><b>Change Log</b></center>
 <ul>
 <P>
+<li> <b><a href="vlan/vlan.1.0.1.tar.gz">Release 1.0.1 (gz)</a> &nbsp; For Kernel: 2.2.18/19, 2.4.3-pre3 &nbsp; April 16, 2001:</b><br>
+  <P>
+  <ul>
+   <li> Incorporated a fix for changing a MAC on a VLAN, it now correctly sets PACKET_HOST.
+        Thanks to Martin Bokaemper for this one.</li>
+   <li> The 2.4 series patch should now compile as a module, thanks to a tweak from someone
+        who's mail I have lost!  Anyway, 3 cheers to the un-named coder!</li>
+   <li> There were *NO* changes to the 2.2 series patch, though I did verify that it seems to
+        work fine with the 2.2.19 kernel.</li>
+  </ul>
+
+</li>
+
+<P>
 <li> <b><a href="vlan/vlan.1.0.0.tar.gz">Release 1.0.0 (gz)</a> &nbsp; For Kernel: 2.2.18, 2.4.0 &nbsp; Jan 14, 2001:</b><br>
-  <center><b>NOT WELL TESTED YET, use 0.0.15 if un-brave</b></center>
   <P>
   <ul>
    <li> Really fixed (and tested) MAC change-ability.  When you set the MAC address on
@@ -319,7 +324,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Sun Jan 14 21:40:26 MST 2001
+Last modified: Mon Apr 16 21:46:26 MST 2001
 <!-- hhmts end -->
   </body>
 </html>

@@ -1,6 +1,24 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            April 16, 2001
+Version:         1.0.1
+Kernel Version:  2.2.18/19, 2.4.3-pre3
+Status:          Very similar to 1.0.0, should be relatively stable.
+Changes:         
+                 Incorporated a fix for changing a MAC on a VLAN, it now
+                 correctly sets PACKET_HOST.
+                   Thanks to Martin Bokaemper for this one.
+
+                 The 2.4 series patch should now compile as a module, thanks
+                 to a tweak from someone who's mail I have lost!  Anyway, 3
+                 cheers to the un-named coder!
+
+                 There were *NO* changes to the 2.2 series patch, though I did
+                 verify that it seems to work fine with the 2.2.19 kernel.
+
+
+
 Date:            January 14, 2001
 Version:         1.0.0
 Kernel Version:  2.2.18, 2.4.0
