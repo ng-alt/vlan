@@ -171,14 +171,16 @@ int main(int argc, char** argv) {
          fprintf(stderr,"ERROR: trying to add VLAN #%u to IF -:%s:-  error: %s\n",
                     vid, if_name, strerror(errno));
                  
-          }
+      }
       else {
          // MATHIEU
          // cout << "Added VLAN with VID == " << vid << " to IF -:"
          //     << if_name << ":-" << endl;
          fprintf(stdout,"Added VLAN with VID == %u to IF -:%s:-\n",
                             vid, if_name);
-
+         if (vid == 1) {
+            fprintf(stdout, "WARNING:  VLAN 1 does not work with many switches,\nconsider another number if you have problems.\n");
+         }
       }
    }//if
    else if (strcasecmp(cmd, "rem") == 0) {

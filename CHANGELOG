@@ -1,6 +1,26 @@
 This file should be prepended to each time a release is made.
 
 
+Date:            January 14, 2001
+Version:         1.0.0
+Kernel Version:  2.2.18, 2.4.0
+Status:          Fairly similar to 0.0.15, should be relatively stable.
+Changes:         
+
+		 Really fixed (and tested) MAC change-ability. When you set the
+        	 MAC address on a VLAN, it will also attempt to set the underlying
+        	 device to PROMISCious mode (otherwise, the VLAN will not
+        	 receive any packets.) 
+
+	         Hashed-device lookup is disabled by default because some people
+        	 had trouble with the 'lo' device. Please feel free to re-enable by
+        	 editing the line in net/core/dev.
+                 (search for #define BEN_FAST_DEV_LOOKUP). 
+
+	         vconfig should warn when creating VLAN 1, because that VLAN is
+        	 not compatible with many switches.
+
+
 Date:            December 31, 2000
 Version:         0.0.15
 Kernel Version:  2.2.18, 2.4.prerelease
