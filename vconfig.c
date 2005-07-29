@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
          }
          else {
             // MATHIEU
-                    //cerr << "Invalid name type.\n";
+            //cerr << "Invalid name type.\n";
             fprintf(stderr,"Invalid name type.\n");
                                  
             show_usage();
@@ -144,10 +144,9 @@ int main(int argc, char** argv) {
          if_name = argv[2];
          if (strlen(if_name) > 15) {
             // MATHIEU
-                //cerr << "ERROR:  if_name must be 15 characters or less." << endl;
-            fprintf(stderr,"ERROR:  if_name must be 15 characters or less.\n");
-                        
-                        exit(1);
+            //cerr << "ERROR:  if_name must be 15 characters or less." << endl;
+            fprintf(stderr,"ERROR:  if_name must be 15 characters or less.\n");            
+            exit(1);
          }
          strcpy(if_request.device1, if_name);
       }
@@ -187,7 +186,8 @@ int main(int argc, char** argv) {
       if_request.cmd = ADD_VLAN_CMD;
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to add VLAN #%u to IF -:%s:-  error: %s\n",
-                    vid, if_name, strerror(errno));                 
+                    vid, if_name, strerror(errno));
+         exit(3);
       }
       else {
          fprintf(stdout,"Added VLAN with VID == %u to IF -:%s:-\n",
@@ -201,7 +201,8 @@ int main(int argc, char** argv) {
       if_request.cmd = DEL_VLAN_CMD;
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to remove VLAN -:%s:- error: %s\n",
-                 if_name, strerror(errno));         
+                 if_name, strerror(errno));
+         exit(4);
       }
       else {
          fprintf(stdout,"Removed VLAN -:%s:-\n", if_name);
@@ -211,7 +212,8 @@ int main(int argc, char** argv) {
       if_request.cmd = SET_VLAN_EGRESS_PRIORITY_CMD;
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set egress map on device -:%s:- error: %s\n",
-                 if_name, strerror(errno));         
+                 if_name, strerror(errno));
+         exit(5);
       }
       else {
          fprintf(stdout,"Set egress mapping on device -:%s:- "
@@ -224,6 +226,7 @@ int main(int argc, char** argv) {
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set ingress map on device -:%s:- error: %s\n",
                  if_name, strerror(errno));
+         exit(6);
       }
       else {
          fprintf(stdout,"Set ingress mapping on device -:%s:- "
@@ -236,6 +239,7 @@ int main(int argc, char** argv) {
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set flag on device -:%s:- error: %s\n",
                  if_name, strerror(errno));
+         exit(7);
       }
       else {
          fprintf(stdout,"Set flag on device -:%s:- "
@@ -247,7 +251,8 @@ int main(int argc, char** argv) {
       if_request.cmd = SET_VLAN_NAME_TYPE_CMD;
       if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
          fprintf(stderr,"ERROR: trying to set name type for VLAN subsystem, error: %s\n",
-                 strerror(errno));         
+                 strerror(errno));
+         exit(8);
       }
       else {
          fprintf(stdout,"Set name-type for VLAN subsystem."

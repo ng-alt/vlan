@@ -8,8 +8,8 @@
     <h1><center>802.1Q VLAN implementation for Linux</center></h1>
 
 <center><i>
-Updated Fed 27, 2003<br>
-Release:  1.7</br>
+Updated Sept 30, 2003<br>
+Release:  1.8</br>
 </i></center>
 <P>
 
@@ -72,7 +72,7 @@ someone has done some sort of benchmark, I'll be happy to place it here!
 <ul>
  <li>Implements 802.1Q VLAN spec.</li>
  <li>Implements support for a non-standard (as far as I know)
-     MAC-based VLAN functionality.  Primary author is: Alex Zeffertt</li>
+     MAC-based VLAN functionality.</li>
  <li>Can support up to 4094 VLANs per ethernet interface.</li>
  <li>Scales well in critical paths: O(n), where n is the number of PHYSICAL ethernet interfaces,
      and that is only on ingress.  O(1) in every other critical path, as far as I know.</li>
@@ -99,6 +99,20 @@ Download vconfig binaries (source is more flexible, but this will work for most 
 <hr>
 <center><b>Change Log</b></center>
 <ul>
+<P>
+
+<li> <b><a href="vlan/vlan.1.8.tar.gz">Release 1.8 (gz)</a> &nbsp; For Kernel: 2.4.21+ &nbsp; Sept 30, 2003:</b><br>
+  <P>
+  <ul>
+   <li>Updated MAC-VLAN code and completed testing.  Based on Alex Zeffertt's
+       work but much has been re-written and he cannot be held responsible!
+       Please send all bug reports to the VLAN mailing list.  The Candela Technologies unified
+       patch is the thing to apply now, and it contains various other not-necessarily-VLAN
+       related bits and pieces.
+   </li>
+  </ul>
+</li>
+
 <P>
 <li> <b><a href="vlan/vlan.1.7m.tar.gz">Release 1.7m (gz)</a> &nbsp; For Kernel: 2.4.14+ &nbsp; Feb 27, 2003:</b><br>
   <P>
@@ -416,7 +430,7 @@ comments.
              <a target=_top href="index.html">Ben Greear's Home Page</a></address>
 <!-- Created: Sat Jan 30 18:27:28 MST 1999 -->
 <!-- hhmts start -->
-Last modified: Tue Apr  8 08:44:00 PDT 2003
+Last modified: Tue Sep 30 14:16:14 PDT 2003
 <!-- hhmts end -->
   </body>
 </html>
