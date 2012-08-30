@@ -1,6 +1,23 @@
 # makefile template
 
-include MakeInclude
+#include MakeInclude
+
+CROSS =
+CC = $(CROSS)gcc
+AR = $(CROSS)ar
+STRIP = $(CROSS)strip
+#DOSTATIC = true
+
+ifeq ($(PLATFORM),ppc)
+CCFLAGS = -g -O2 -D_GNU_SOURCE -Wall -I../../linuxppc/linux-2.4.19-rc3/include
+else
+CCFLAGS = -g -O2 -D_GNU_SOURCE -Wall -I$(LINUXDIR)/include
+endif
+
+ifeq ($(strip $(DOSTATIC)),true)
+    LDFLAGS += --static
+endif
+
 
 LDLIBS =  
 
@@ -24,6 +41,11 @@ $(VCONFIG): $(VLAN_OBJS)
 	$(STRIP) $(VCONFIG)
 
 
+install: $(VCONFIG)
+	install -d $(INSTALLDIR)/vlan/usr/sbin
+	install -m 755 vconfig $(INSTALLDIR)/vlan/usr/sbin
+	$(STRIP) $(INSTALLDIR)/vlan/usr/sbin/vconfig
+
 $(ALL_OBJS): %.o: %.c %.h
 	@echo " "
 	@echo "Making $<"
@@ -35,8 +57,3 @@ clean:
 purge: clean
 	rm -f *.flc ${VCONFIG} vconfig.h
 	rm -f *~
-
-
-
-
-
